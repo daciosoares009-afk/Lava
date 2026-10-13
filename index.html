@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#102b70" />
+    <meta name="description" content="Acesse sua conta LaveMais ou crie seu cadastro." />
+    <title>Entrar ou criar conta | LaveMais</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="brand-panel" aria-label="LaveMais Lavanderia Self Service">
+        <a class="brand-logo" href="#login" aria-label="LaveMais, início">
+          <img src="logo-lavemais.png" alt="LaveMais Lavanderia Self Service" />
+        </a>
+        <div class="brand-copy">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Cuidado que simplifica</span>
+          <h1>Mais tempo para<br /><span>o que importa.</span></h1>
+          <p>Entre para acompanhar sua experiência LaveMais com praticidade e cuidado em cada detalhe.</p>
+        </div>
+        <div class="brand-bottom"><span class="sparkle" aria-hidden="true">✳</span><span>Limpeza, praticidade e confiança.</span></div>
+        <div class="decor decor-one" aria-hidden="true"></div>
+        <div class="decor decor-two" aria-hidden="true"></div>
+      </section>
+
+      <section class="form-panel" aria-live="polite">
+        <div class="mobile-logo"><img src="logo-lavemais.png" alt="LaveMais Lavanderia Self Service" /></div>
+        <div class="form-wrap">
+          <div class="form-heading">
+            <p class="form-kicker" id="form-kicker">SUA CONTA LAVEMAIS</p>
+            <h2 id="form-title">Que bom ter você<br class="desktop-break" /> por aqui.</h2>
+            <p class="form-subtitle" id="form-subtitle">Entre com seus dados para continuar.</p>
+          </div>
+
+          <div class="mode-switch" role="tablist" aria-label="Acesso à conta">
+            <button class="mode-tab is-active" type="button" role="tab" id="tab-login" aria-selected="true" aria-controls="login-form">Entrar</button>
+            <button class="mode-tab" type="button" role="tab" id="tab-register" aria-selected="false" aria-controls="register-form">Criar conta</button>
+            <span class="tab-indicator" aria-hidden="true"></span>
+          </div>
+
+          <form id="login-form" class="auth-form" novalidate>
+            <label class="field">
+              <span>E-mail</span>
+              <span class="input-wrap"><span class="input-icon" aria-hidden="true">✉</span><input name="email" type="email" autocomplete="email" placeholder="voce@email.com" required /></span>
+              <small class="field-error" aria-live="polite"></small>
+            </label>
+            <label class="field">
+              <span>Senha</span>
+              <span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required minlength="8" /><button class="password-toggle" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></span>
+              <small class="field-error" aria-live="polite"></small>
+            </label>
+            <button class="submit-button" type="submit"><span>Entrar na minha conta</span><span class="button-arrow" aria-hidden="true">→</span></button>
+            <p class="form-feedback" role="status" aria-live="polite"></p>
+            <button class="logout-button" type="button" hidden>Sair da conta</button>
+            <p class="switch-prompt">Ainda não tem uma conta? <button type="button" data-switch="register">Criar cadastro</button></p>
+          </form>
+
+          <form id="register-form" class="auth-form" hidden novalidate>
+            <div class="field-grid">
+              <label class="field field-full"><span>Nome completo</span><span class="input-wrap"><span class="input-icon" aria-hidden="true">◉</span><input name="fullName" type="text" autocomplete="name" placeholder="Como podemos chamar você?" required minlength="3" /></span><small class="field-error" aria-live="polite"></small></label>
+              <label class="field"><span>E-mail</span><span class="input-wrap"><span class="input-icon" aria-hidden="true">✉</span><input name="email" type="email" autocomplete="email" placeholder="voce@email.com" required /></span><small class="field-error" aria-live="polite"></small></label>
+              <label class="field"><span>Telefone</span><span class="input-wrap"><span class="input-icon" aria-hidden="true">⌕</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(00) 00000-0000" required /></span><small class="field-error" aria-live="polite"></small></label>
+              <label class="field"><span>Data de nascimento</span><span class="input-wrap"><span class="input-icon" aria-hidden="true">▦</span><input name="birthDate" type="date" autocomplete="bday" required /></span><small class="field-error" aria-live="polite"></small></label>
+              <label class="field"><span>Senha</span><span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="password" type="password" autocomplete="new-password" placeholder="Mínimo de 8 caracteres" required minlength="8" /><button class="password-toggle" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></span><small class="field-hint">Use pelo menos 8 caracteres, com letra e número.</small><small class="field-error" aria-live="polite"></small></label>
+              <label class="field"><span>Confirmar senha</span><span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="confirmPassword" type="password" autocomplete="new-password" placeholder="Repita sua senha" required minlength="8" /></span><small class="field-error" aria-live="polite"></small></label>
+            </div>
+            <button class="submit-button" type="submit"><span>Criar minha conta</span><span class="button-arrow" aria-hidden="true">→</span></button>
+            <p class="form-feedback" role="status" aria-live="polite"></p>
+            <p class="switch-prompt">Já tem uma conta? <button type="button" data-switch="login">Entrar</button></p>
+          </form>
+          <p class="privacy-note"><span aria-hidden="true">⌑</span> Seus dados só serão enviados após a conexão segura ao servidor.</p>
+        </div>
+        <footer class="form-footer"><span>© <span id="year"></span> LaveMais Lavanderia</span><span>Feito para facilitar seu dia.</span></footer>
+      </section>
+    </main>
+  </body>
+</html>

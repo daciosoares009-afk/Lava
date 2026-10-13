@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#092a50" />
+    <meta name="description" content="LaveMais — Lavanderia Self Service. Mais tempo para o que importa." />
+    <title>LaveMais — Mais tempo para o que importa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/home.css" />
+    <script type="module" src="/home.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="site-header">
+      <div class="header-inner page-width">
+        <a class="site-brand" href="#inicio" aria-label="LaveMais — início">
+          <img src="/logo-lavemais.png" alt="LaveMais Lavanderia Self Service" />
+        </a>
+        <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="site-navigation">
+          <span></span><span></span><span></span>
+        </button>
+        <nav class="site-navigation" id="site-navigation" aria-label="Navegação principal">
+          <a href="#inicio">Início</a>
+          <a href="#servicos">Serviços</a>
+          <a href="#planos">Planos e preços</a>
+          <a href="#sobre">A LaveMais</a>
+          <a href="#contato">Localização</a>
+          <div class="nav-actions">
+            <a class="account-link" href="/login" data-account-link>Entrar na conta</a>
+            <a class="button button-navy whatsapp-action" href="#contato" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">Fale pelo WhatsApp <span aria-hidden="true">↗</span></a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="conteudo">
+      <section class="hero" id="inicio" aria-labelledby="hero-title">
+        <div class="hero-inner page-width">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> Lavanderia self service</p>
+            <h1 id="hero-title">Mais tempo<br />para <em>o que importa.</em></h1>
+            <p class="hero-description">Um jeito mais simples de cuidar das roupas e deixar a rotina mais leve.</p>
+            <div class="hero-actions">
+              <a class="button button-turquoise" href="#servicos">Conheça a LaveMais <span aria-hidden="true">↓</span></a>
+              <a class="text-link" href="/login">Acessar minha conta <span aria-hidden="true">→</span></a>
+            </div>
+            <span class="hero-detail"><span aria-hidden="true"></span> Cuidado prático, no seu ritmo</span>
+          </div>
+          <figure class="hero-photo">
+            <img src="/lavemais-hero.jpg" alt="Interior ilustrativo de uma lavanderia self service, com máquinas de lavar e roupas limpas dobradas" fetchpriority="high" />
+            <figcaption><span class="photo-caption-mark" aria-hidden="true"></span> Imagem ilustrativa · Foto de <a href="https://unsplash.com/@chrisvomradio_jpeg" target="_blank" rel="noopener noreferrer">Chris Weiher</a> / Unsplash</figcaption>
+          </figure>
+        </div>
+        <div class="hero-bottom page-width"><span>PRATICIDADE PARA O SEU DIA</span><span class="hero-bottom-rule" aria-hidden="true"></span><a href="#servicos" aria-label="Explore as informações da LaveMais">Explore <span aria-hidden="true">↓</span></a></div>
+      </section>
+
+      <section class="services section-pad" id="servicos" aria-labelledby="services-title">
+        <div class="page-width services-layout">
+          <div class="section-kicker"><span>01</span><span>Conheça a LaveMais</span></div>
+          <div class="services-main">
+            <div class="services-heading">
+              <p class="eyebrow eyebrow-dark">Cuidado com mais autonomia</p>
+              <h2 id="services-title">Sua rotina merece<br /><em>um pouco mais de leveza.</em></h2>
+              <p class="section-lead">A LaveMais é uma lavanderia self service. Uma proposta prática para cuidar das roupas e aproveitar melhor o seu tempo.</p>
+            </div>
+            <div class="service-list" data-services-list aria-label="Serviços da LaveMais">
+              <p class="content-note" data-services-note>As informações sobre serviços e disponibilidade da unidade serão apresentadas aqui assim que estiverem confirmadas.</p>
+            </div>
+            <div class="service-values" aria-label="Benefícios da proposta LaveMais"><span>Autonomia</span><span>Praticidade</span><span>Mais tempo</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="start-here" aria-labelledby="start-title">
+        <div class="page-width start-inner">
+          <div class="start-heading">
+            <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> Um bom começo</p>
+            <h2 id="start-title">Tudo começa<br />com <em>uma escolha simples.</em></h2>
+          </div>
+          <ol class="start-steps">
+            <li><span class="step-number">01</span><div><h3>Conheça a proposta</h3><p>Veja o que a LaveMais oferece e acompanhe as informações da unidade.</p></div><a href="#servicos" aria-label="Conhecer a proposta da LaveMais">↗</a></li>
+            <li><span class="step-number">02</span><div><h3>Consulte as recargas</h3><p>Confira os valores e bônus disponíveis na LaveMais.</p></div><a href="#planos" aria-label="Ver recargas e preços">↗</a></li>
+            <li><span class="step-number">03</span><div><h3>Acesse sua conta</h3><p>Entre ou crie seu cadastro para acompanhar sua experiência LaveMais.</p></div><a href="/login" aria-label="Entrar ou criar conta">↗</a></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="pricing section-pad" id="planos" aria-labelledby="pricing-title">
+        <div class="page-width pricing-layout">
+          <div class="section-kicker"><span>02</span><span>Planos e preços</span></div>
+          <div class="pricing-main">
+            <div class="pricing-copy">
+              <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> Transparência em cada escolha</p>
+              <h2 id="pricing-title">Escolha sua recarga<br /><em>e confira o bônus.</em></h2>
+              <p>Escolha o valor da recarga e confira o bônus correspondente.</p>
+              <a class="pricing-account" href="/login">Acesse sua conta <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="price-list" data-price-list>
+              <div class="price-list-head"><span>RECARGA</span><span>BÔNUS</span></div>
+              <div class="price-rows" data-recharge-rows>
+                <p class="price-note" data-recharge-note>Consulte as opções de recarga disponíveis.</p>
+              </div>
+            </div>
+            <div class="price-list additional-prices" data-price-list hidden>
+              <div class="price-list-head"><span>OUTRAS OPÇÕES</span><span>INFORMAÇÕES</span></div>
+              <div class="price-rows" data-price-rows>
+                <p class="price-note" data-price-note>Outras opções serão divulgadas quando confirmadas.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="about section-pad" id="sobre" aria-labelledby="about-title">
+        <div class="page-width about-layout">
+          <div class="section-kicker"><span>03</span><span>A LaveMais</span></div>
+          <div class="about-main">
+            <div class="about-visual" aria-hidden="true"><span>Mais<br />leve.</span><i></i><small>LAVEMAIS · SELF SERVICE</small></div>
+            <div class="about-copy">
+              <p class="eyebrow eyebrow-dark">Uma proposta para a sua rotina</p>
+              <h2 id="about-title">Mais espaço<br />para <em>o que importa.</em></h2>
+              <p data-story-copy>A proposta da LaveMais é tornar o cuidado com as roupas mais prático e abrir espaço para você aproveitar o seu dia.</p>
+              <a class="text-link text-link-dark" href="#contato">Encontre informações da unidade <span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="contact section-pad" id="contato" aria-labelledby="contact-title">
+        <div class="page-width contact-layout">
+          <div class="section-kicker"><span>04</span><span>Localização e atendimento</span></div>
+          <div class="contact-main">
+            <div class="contact-heading">
+              <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> A LaveMais, mais perto</p>
+              <h2 id="contact-title">Estamos aqui<br /><em>para facilitar.</em></h2>
+            </div>
+            <div class="contact-details">
+              <div class="contact-address">
+                <p class="contact-label">ENDEREÇO</p>
+                <p class="contact-value" data-address>As informações da unidade serão divulgadas assim que confirmadas.</p>
+                <a class="contact-link" data-map-link href="#contato" hidden target="_blank" rel="noopener noreferrer">Abrir rota <span aria-hidden="true">↗</span></a>
+              </div>
+              <div class="contact-meta">
+                <div class="contact-detail"><p class="contact-label">TELEFONE</p><p data-phone class="contact-value">—</p></div>
+                <div class="contact-detail"><p class="contact-label">HORÁRIOS</p><div data-hours class="contact-value">—</div></div>
+                <div class="contact-detail contact-whatsapp"><p class="contact-label">WHATSAPP</p><a class="contact-link whatsapp-action" href="#contato" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">Conversar com a equipe <span aria-hidden="true">↗</span></a><span class="contact-value whatsapp-unavailable" data-whatsapp-pending>Canal de atendimento a ser divulgado.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="page-width footer-top">
+        <div class="footer-branding"><a class="footer-brand" href="#inicio" aria-label="LaveMais — voltar ao início"><img src="/logo-lavemais.png" alt="LaveMais Lavanderia Self Service" /></a><p>Mais tempo para o que importa.</p></div>
+        <nav class="footer-nav" aria-label="Links do rodapé"><a href="#servicos">Serviços</a><a href="#planos">Planos e preços</a><a href="#sobre">A LaveMais</a><a href="#contato">Localização e contato</a><a href="/login">Acesso à conta</a></nav>
+        <a class="footer-whatsapp whatsapp-action" href="#contato" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">WhatsApp <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="page-width footer-bottom"><span>© <span data-current-year></span> LaveMais Lavanderia Self Service</span><div class="legal-links" data-legal-links></div></div>
+    </footer>
+  </body>
+</html>

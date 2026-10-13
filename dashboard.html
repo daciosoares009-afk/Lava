@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#102b70" />
+    <meta name="description" content="Sua área de cliente LaveMais." />
+    <title>Minha conta | LaveMais</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/dashboard.css" />
+    <script type="module" src="/dashboard.js" defer></script>
+  </head>
+  <body class="dashboard-body">
+    <div class="dashboard-layout">
+      <aside class="sidebar" id="client-sidebar" aria-label="Navegação da conta">
+        <a class="dashboard-brand" href="/" aria-label="LaveMais, página inicial"><img src="/logo-lavemais.png" alt="LaveMais Lavanderia Self Service" /></a>
+        <p class="sidebar-label">ÁREA DO CLIENTE</p>
+        <nav class="side-nav" aria-label="Seções da conta">
+          <a href="/conta/inicio" data-nav="inicio" class="is-active"><span aria-hidden="true">⌂</span> Início</a>
+          <a href="/conta/agendamentos" data-nav="agendamentos"><span aria-hidden="true">◷</span> Agendamentos</a>
+          <a href="/conta/servicos" data-nav="servicos"><span aria-hidden="true">◌</span> Serviços e preços</a>
+          <a href="/conta/planos" data-nav="planos"><span aria-hidden="true">▤</span> Planos</a>
+          <a href="/conta/beneficios" data-nav="beneficios"><span aria-hidden="true">✳</span> Fidelidade e benefícios</a>
+          <a href="/conta/perfil" data-nav="perfil"><span aria-hidden="true">◎</span> Meu perfil</a>
+          <a href="/conta/sobre" data-nav="sobre"><span aria-hidden="true">⌖</span> Sobre a LaveMais</a>
+        </nav>
+        <div class="sidebar-bottom"><a href="/" class="back-home">← Voltar ao site</a><button class="logout-button" type="button">Sair da conta</button></div>
+      </aside>
+
+      <main class="dashboard-main">
+        <header class="topbar">
+          <button class="mobile-menu-toggle" type="button" aria-label="Abrir navegação" aria-expanded="false" aria-controls="client-sidebar"><span aria-hidden="true">☰</span></button>
+          <div><p class="topbar-kicker">MINHA LAVEMAIS</p><p class="topbar-caption">Sua experiência, em um só lugar.</p></div>
+          <button class="profile-shortcut" type="button" data-open-panel="perfil"><span class="avatar" data-avatar>—</span><span data-short-name>Minha conta</span><span aria-hidden="true">⌄</span></button>
+        </header>
+
+        <div class="dashboard-content">
+          <section class="dashboard-panel is-visible" id="inicio" data-panel="inicio" aria-labelledby="welcome-title">
+            <div class="welcome-row"><div><p class="section-eyebrow">BEM-VINDO(A) À SUA CONTA</p><h1 id="welcome-title">Olá, <span data-first-name>cliente</span>.</h1><p class="welcome-copy">Mais praticidade para cuidar da sua rotina.</p></div><span class="welcome-mark" aria-hidden="true">L<span>+</span></span></div>
+            <div class="primary-action"><div><p class="section-eyebrow">PRECISA DE UMA LAVAGEM?</p><h2>Vamos começar por aqui.</h2><p>Consulte a equipe para saber como solicitar seu atendimento.</p></div><a class="button-primary" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">Conversar pelo WhatsApp <span aria-hidden="true">↗</span></a><p class="pending-inline" data-whatsapp-pending>O canal de WhatsApp será exibido quando o contato comercial estiver configurado.</p></div>
+            <div class="overview-grid">
+              <article class="overview-block overview-services"><div class="overview-heading"><div><p class="section-eyebrow">CUIDADO COM SUAS ROUPAS</p><h2>Serviços e preços</h2></div><a href="/conta/servicos" data-open-panel="servicos" class="text-link">Consultar <span aria-hidden="true">→</span></a></div><div data-overview-services class="overview-list"><p class="empty-copy">As opções confirmadas aparecerão aqui.</p></div></article>
+              <article class="overview-block overview-membership"><p class="section-eyebrow">SUA CONTA</p><h2>Planos e benefícios</h2><p>Acompanhe por aqui quando as opções e os recursos estiverem disponíveis.</p><a href="/conta/planos" data-open-panel="planos" class="text-link">Conhecer planos <span aria-hidden="true">→</span></a></article>
+            </div>
+            <p class="account-since">Cliente desde <span data-member-since>—</span></p>
+          </section>
+
+          <section class="dashboard-panel" id="agendamentos" data-panel="agendamentos" aria-labelledby="appointments-title">
+            <div class="page-heading"><p class="section-eyebrow">SUA ROTINA LAVEMAIS</p><h1 id="appointments-title">Agendamentos</h1><p>Inicie uma consulta com a equipe e acompanhe os registros disponíveis para sua conta.</p></div>
+            <div class="empty-state"><span class="empty-symbol" aria-hidden="true">◷</span><div><h2>Não há agendamentos para exibir</h2><p>Os agendamentos ainda não são registrados nesta plataforma. O contato pelo WhatsApp inicia uma conversa, mas não confirma uma reserva.</p><a class="button-primary" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">Consultar atendimento <span aria-hidden="true">↗</span></a><p class="pending-inline" data-whatsapp-pending>O WhatsApp comercial ainda não está configurado.</p></div></div>
+          </section>
+
+          <section class="dashboard-panel" id="servicos" data-panel="servicos" aria-labelledby="services-title">
+            <div class="page-heading"><p class="section-eyebrow">OPÇÕES CONFIRMADAS</p><h1 id="services-title">Serviços e preços</h1><p>Consulte somente as informações comerciais cadastradas pela LaveMais.</p></div>
+            <div class="service-directory" data-service-directory><div class="editorial-empty"><span aria-hidden="true">01</span><div><h2>Informações em atualização</h2><p>Os serviços e valores serão exibidos quando forem confirmados pela LaveMais.</p></div></div></div>
+            <div class="client-recharges" data-recharge-list hidden>
+              <h2>Recargas disponíveis</h2>
+              <div class="client-recharges-head"><span>Recarga</span><span>Bônus</span></div>
+              <div data-recharge-rows><p class="empty-copy" data-recharge-note>As opções de recarga serão exibidas aqui.</p></div>
+            </div>
+          </section>
+
+          <section class="dashboard-panel" id="planos" data-panel="planos" aria-labelledby="plans-title">
+            <div class="page-heading"><p class="section-eyebrow">ESCOLHA NO SEU TEMPO</p><h1 id="plans-title">Planos</h1><p>Veja as opções mensais, anuais e familiares quando seus valores e condições forem publicados.</p></div>
+            <div class="plan-list" data-plan-list><div class="editorial-empty"><span aria-hidden="true">02</span><div><h2>Nenhum plano publicado ainda</h2><p>Não há contratação ou pagamento de planos disponível pela plataforma no momento.</p></div></div></div>
+          </section>
+
+          <section class="dashboard-panel" id="beneficios" data-panel="beneficios" aria-labelledby="benefits-title">
+            <div class="page-heading"><p class="section-eyebrow">VANTAGENS LAVEMAIS</p><h1 id="benefits-title">Fidelidade e benefícios</h1><p>Um espaço para acompanhar benefícios reais vinculados à sua conta.</p></div>
+            <div class="benefits-note"><span class="benefit-star" aria-hidden="true">✳</span><div><h2>Seu histórico ainda não é acompanhado por aqui</h2><p>O programa de fidelidade e os cupons ainda não estão integrados ao sistema. Nenhuma lavagem ou recompensa será contabilizada até que esse recurso seja implementado. O desconto de aniversário de 50% está previsto como benefício futuro, mas ainda não está ativo.</p></div></div>
+          </section>
+
+          <section class="dashboard-panel" id="perfil" data-panel="perfil" aria-labelledby="profile-title">
+            <div class="page-heading"><p class="section-eyebrow">SEUS DADOS PESSOAIS</p><h1 id="profile-title">Meu perfil</h1><p>Consulte e atualize os dados permitidos da sua conta.</p></div>
+            <form class="profile-form" id="profile-form" novalidate>
+              <div class="profile-field"><label for="profile-name">Nome completo</label><input id="profile-name" name="fullName" autocomplete="name" required /><small data-error="fullName"></small></div>
+              <div class="profile-field"><label for="profile-email">E-mail</label><input id="profile-email" name="email" type="email" autocomplete="email" readonly /><small>E-mail de acesso. Para alterá-lo, entre em contato com a LaveMais.</small></div>
+              <div class="profile-field"><label for="profile-phone">Telefone</label><input id="profile-phone" name="phone" type="tel" autocomplete="tel" required /><small data-error="phone"></small></div>
+              <div class="profile-field"><label for="profile-birthdate">Data de nascimento</label><input id="profile-birthdate" name="birthDate" type="date" required /><small data-error="birthDate"></small></div>
+              <p class="profile-feedback" role="status" aria-live="polite"></p>
+              <button class="button-primary" type="submit"><span>Salvar alterações</span><span aria-hidden="true">→</span></button>
+            </form>
+          </section>
+
+          <section class="dashboard-panel" id="sobre" data-panel="sobre" aria-labelledby="about-title">
+            <div class="page-heading"><p class="section-eyebrow">CUIDADO QUE SIMPLIFICA</p><h1 id="about-title">Sobre a LaveMais</h1><p data-story-copy>Praticidade e cuidado para deixar mais tempo para o que importa.</p></div>
+            <div class="store-details"><div><p class="section-eyebrow">ONDE ESTAMOS</p><h2>Localização</h2><p data-address>Endereço ainda não informado.</p><a data-map-link hidden target="_blank" rel="noopener noreferrer" class="text-link">Abrir no mapa <span aria-hidden="true">↗</span></a></div><div><p class="section-eyebrow">FALE COM A EQUIPE</p><h2>Atendimento</h2><p data-phone>Telefone ainda não informado.</p><div data-hours><span>Horários ainda não informados.</span></div><a data-whatsapp-link hidden target="_blank" rel="noopener noreferrer" class="text-link">WhatsApp <span aria-hidden="true">↗</span></a></div></div>
+            <a href="/" class="back-public">← Voltar para a página pública</a>
+          </section>
+        </div>
+      </main>
+    </div>
+    <nav class="mobile-nav" aria-label="Navegação principal da conta">
+      <a href="/conta/inicio" data-nav="inicio" class="is-active"><span aria-hidden="true">⌂</span><small>Início</small></a>
+      <a href="/conta/agendamentos" data-nav="agendamentos"><span aria-hidden="true">◷</span><small>Agenda</small></a>
+      <a href="/conta/servicos" data-nav="servicos"><span aria-hidden="true">◌</span><small>Serviços</small></a>
+      <a href="/conta/beneficios" data-nav="beneficios"><span aria-hidden="true">✳</span><small>Benefícios</small></a>
+      <a href="/conta/perfil" data-nav="perfil"><span aria-hidden="true">◎</span><small>Perfil</small></a>
+    </nav>
+    <button class="nav-backdrop" type="button" aria-label="Fechar navegação" hidden></button>
+  </body>
+</html>
