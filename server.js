@@ -14,6 +14,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 let config;
 let databaseConnectionPromise;
+const isVercelDeployment = process.env.VERCEL === '1'
+  || process.env.VERCEL_ENV === 'preview'
+  || process.env.VERCEL_ENV === 'production';
 
 app.disable('x-powered-by');
 app.use(helmet({
@@ -50,7 +53,7 @@ async function ensureVercelDatabase() {
 }
 
 function initializeVercelDatabase(req, res, next) {
-  if (process.env.VERCEL !== '1') return next();
+  if (!isVercelDeployment && process.env.NODE_ENV !== 'production') return next();
   if (!config) app.locals.config = { nodeEnv: 'production' };
   if (req.method === 'POST' && req.path === '/api/auth/logout') return next();
   const needsDatabase = req.path.startsWith('/conta')
@@ -138,7 +141,7 @@ async function start() {
   }
 }
 
-if (process.env.VERCEL !== '1' && process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await start();
+if (!isVercelDeployment && process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await start();
 
 export { app, start };
 export default app;
