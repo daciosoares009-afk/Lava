@@ -19,7 +19,7 @@ export async function getSessionUser(req, res) {
     const config = req.app.locals.config;
     const claims = jwt.verify(token, config.jwtSecret, { issuer: 'lavemais-api', audience: 'lavemais-client' });
     const user = await User.findById(claims.sub);
-    if (!user) {
+    if (!user || (claims.sv ?? 0) !== (user.sessionVersion || 0)) {
       clearSessionCookies(res, config);
       return { error: 'UNAUTHENTICATED' };
     }

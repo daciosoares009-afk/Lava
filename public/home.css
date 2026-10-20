@@ -280,3 +280,5 @@ button { font: inherit; }
 
 .price-row .price-value { font-variant-numeric: tabular-nums; }
 .additional-prices { margin-top: 16px; }
+
+html,body{width:100%;min-height:100%}body{min-height:100vh;min-height:100svh}.page-width{width:100%;max-width:none;margin-inline:0;padding-inline:clamp(18px,4vw,64px)}

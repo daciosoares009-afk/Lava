@@ -6,6 +6,10 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, required: true, trim: true, maxlength: 24 },
   birthDate: { type: Date, required: true },
   passwordHash: { type: String, required: true, select: false },
+  passwordResetCodeHash: { type: String, select: false },
+  passwordResetExpiresAt: { type: Date, select: false },
+  passwordResetRequestedAt: { type: Date, select: false },
+  sessionVersion: { type: Number, default: 0 },
 }, {
   timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
   versionKey: false,

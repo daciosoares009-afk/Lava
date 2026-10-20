@@ -92,6 +92,7 @@ app.get('/login', async (req, res, next) => {
     return res.sendFile(path.join(__dirname, 'index.html'));
   } catch (error) { return next(error); }
 });
+app.get(['/recuperar-senha', '/recuperar-senha.html'], (_req, res) => res.sendFile(path.join(__dirname, 'recuperar-senha.html')));
 const accountSections = new Set(['inicio', 'agendamentos', 'servicos', 'planos', 'beneficios', 'perfil', 'sobre']);
 function safeAccountPath(value) {
   if (value === '/conta') return value;
@@ -111,6 +112,8 @@ app.get(['/conta', '/conta/:section'], async (req, res, next) => {
 });
 app.get('/cadastro', (_req, res) => res.redirect(302, '/login#cadastro'));
 app.get('/styles.css', (_req, res) => res.sendFile(path.join(__dirname, 'styles.css')));
+app.get('/recuperar-senha.css', (_req, res) => res.sendFile(path.join(__dirname, 'recuperar-senha.css')));
+app.get('/recuperar-senha.js', (_req, res) => res.sendFile(path.join(__dirname, 'recuperar-senha.js')));
 app.get('/app.js', (_req, res) => res.sendFile(path.join(__dirname, 'app.js')));
 app.get('/logo-lavemais.png', (_req, res) => res.sendFile(path.join(__dirname, 'logo-lavemais.png')));
 app.get('/lavemais-hero.jpg', (_req, res) => res.sendFile(path.join(__dirname, 'lavemais-hero.jpg')));

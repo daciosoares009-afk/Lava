@@ -18,5 +18,17 @@ export function readConfig(env = process.env) {
     error.code = 'INVALID_CONFIG';
     throw error;
   }
-  return { port, jwtSecret, mongoUri: env.MONGODB_URI, nodeEnv: env.NODE_ENV || 'development' };
+  const smtpPort = Number(env.SMTP_PORT || 587);
+  const smtp = {
+    host: env.SMTP_HOST?.trim() || '',
+    port: smtpPort,
+    user: env.SMTP_USER?.trim() || '',
+    password: env.SMTP_PASSWORD || '',
+    from: env.SMTP_FROM?.trim() || '',
+  };
+  smtp.configured = Boolean(
+    smtp.host && Number.isInteger(smtp.port) && smtp.port > 0 && smtp.port <= 65535
+      && smtp.user && smtp.password && smtp.from,
+  );
+  return { port, jwtSecret, mongoUri: env.MONGODB_URI, nodeEnv: env.NODE_ENV || 'development', smtp };
 }

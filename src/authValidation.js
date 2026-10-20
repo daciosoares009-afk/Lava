@@ -31,3 +31,24 @@ export function validateLogin(body) {
   if (!password || Buffer.byteLength(password, 'utf8') > 72) errors.password = 'Informe uma senha válida.';
   return { errors, value: { email, password } };
 }
+
+export function validatePasswordResetRequest(body) {
+  const email = normalizeEmail(body.email);
+  const errors = {};
+  if (!emailPattern.test(email) || email.length > 254) errors.email = 'Informe um e-mail válido.';
+  return { errors, value: { email } };
+}
+
+export function validatePasswordResetConfirmation(body) {
+  const email = normalizeEmail(body.email);
+  const code = typeof body.code === 'string' ? body.code.trim() : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+  const errors = {};
+
+  if (!emailPattern.test(email) || email.length > 254) errors.email = 'Informe um e-mail válido.';
+  if (!/^\d{6}$/.test(code)) errors.code = 'Informe o código de 6 dígitos recebido por e-mail.';
+  if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72 || !/[A-Za-zÀ-ÿ]/.test(password) || !/\d/.test(password)) {
+    errors.password = 'A senha deve ter ao menos 8 caracteres, incluir letra e número, e usar no máximo 72 bytes.';
+  }
+  return { errors, value: { email, code, password } };
+}
