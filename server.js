@@ -40,7 +40,7 @@ async function ensureVercelDatabase() {
   }
   if (databaseReady()) return;
   if (!databaseConnectionPromise) {
-    const pending = connectDatabase(config.mongoUri);
+  const pending = connectDatabase(config);
     databaseConnectionPromise = pending;
     try {
       await pending;
@@ -135,8 +135,9 @@ async function start() {
   try {
     config = readConfig();
     app.locals.config = config;
-    await connectDatabase(config.mongoUri);
-    app.listen(config.port, '0.0.0.0', () => console.log(`LaveMais disponível na porta ${config.port} (MongoDB conectado).`));
+    await connectDatabase(config);
+    const backendName = config.supabaseUrl ? 'Supabase' : 'MongoDB';
+    app.listen(config.port, '0.0.0.0', () => console.log(`LaveMais disponível na porta ${config.port} (${backendName} conectado).`));
   } catch (error) {
     if (error.code === 'INVALID_CONFIG') console.error(`Não foi possível iniciar a LaveMais: ${error.message}`);
     else console.error(`Não foi possível conectar ao MongoDB ou iniciar o servidor: ${formatSafeError(error)}`);

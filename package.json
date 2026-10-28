@@ -13,6 +13,7 @@
     "test:integration": "node --test src/auth.integration.test.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.52.0",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",

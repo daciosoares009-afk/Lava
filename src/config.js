@@ -10,8 +10,14 @@ export function readConfig(env = process.env) {
     throw new Error('PORT precisa ser um número entre 1 e 65535.');
   }
   const jwtSecret = env.JWT_SECRET || '';
+  const supabaseUrl = (env.SUPABASE_URL || '').trim();
+  const supabaseAnonKey = (env.SUPABASE_ANON_KEY || '').trim();
+  const supabaseServiceKey = (env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  const mongoUri = (env.MONGODB_URI || '').trim();
+  const hasSupabase = Boolean(supabaseUrl && (supabaseAnonKey || supabaseServiceKey));
+  const hasMongo = Boolean(mongoUri);
   const missing = [];
-  if (!env.MONGODB_URI) missing.push('MONGODB_URI');
+  if (!hasSupabase && !hasMongo) missing.push('MONGODB_URI ou SUPABASE_URL');
   if (jwtSecret.length < 32) missing.push('JWT_SECRET (mínimo de 32 caracteres)');
   if (missing.length) {
     const error = new Error(`Configuração ausente ou inválida: ${missing.join(', ')}. Copie .env.example para .env e preencha os valores.`);
@@ -30,5 +36,14 @@ export function readConfig(env = process.env) {
     smtp.host && Number.isInteger(smtp.port) && smtp.port > 0 && smtp.port <= 65535
       && smtp.user && smtp.password && smtp.from,
   );
-  return { port, jwtSecret, mongoUri: env.MONGODB_URI, nodeEnv: env.NODE_ENV || 'development', smtp };
+  return {
+    port,
+    jwtSecret,
+    mongoUri,
+    supabaseUrl,
+    supabaseAnonKey,
+    supabaseServiceKey,
+    nodeEnv: env.NODE_ENV || 'development',
+    smtp,
+  };
 }

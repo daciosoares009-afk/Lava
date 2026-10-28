@@ -27,6 +27,16 @@ Requer Node.js 20 ou superior.
 6. Instale os pacotes com `npm install` e inicie com `npm start` (ou `npm run dev` durante o desenvolvimento).
 7. Abra `http://localhost:3000`. O terminal só informa que o MongoDB está conectado depois que a conexão e os índices do modelo forem confirmados.
 
+### Fase 1 da migração para o Supabase
+
+Para preparar o banco no Supabase antes de migrar o código da aplicação:
+
+1. Crie um projeto no Supabase.
+2. Abra o SQL Editor do projeto e execute o arquivo `supabase/schema.sql`.
+3. Copie `.env.example` para `.env` e preencha `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY`.
+4. O `MONGODB_URI` pode permanecer temporariamente em `.env` até a migração do backend para o Supabase ser concluída.
+5. O esquema cria a tabela `public.users` com as colunas necessárias para cadastro, login, sessão e redefinição de senha.
+
 O arquivo `.gitignore` ignora `.env` e os demais arquivos `.env.*`, mantendo `.env.example` versionável.
 
 ## Deploy na Vercel
