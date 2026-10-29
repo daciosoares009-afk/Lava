@@ -15,7 +15,7 @@ export function validateRegistration(body) {
 
   if (fullName.length < 3 || fullName.length > 120 || fullName.split(' ').length < 2) errors.fullName = 'Informe nome e sobrenome.';
   if (email.length > 254 || !emailPattern.test(email)) errors.email = 'Informe um e-mail válido.';
-  if (digits.length < 10 || digits.length > 15) errors.phone = 'Informe um telefone válido com DDD.';
+  if (digits.length < 10 || digits.length > 15 || phone.length > 24) errors.phone = 'Informe um telefone válido com DDD.';
   if (Number.isNaN(birthDate.getTime()) || birthDate.toISOString().slice(0, 10) !== body.birthDate || birthDate >= new Date()) errors.birthDate = 'Informe uma data de nascimento válida.';
   if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72 || !/[A-Za-zÀ-ÿ]/.test(password) || !/\d/.test(password)) {
     errors.password = 'A senha deve ter ao menos 8 caracteres, incluir letra e número, e usar no máximo 72 bytes.';

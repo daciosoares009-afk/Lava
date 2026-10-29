@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { app } from '../server.js';
 
-test('informa indisponibilidade e não aceita cadastro sem conexão ao banco', { skip: process.env.MONGODB_TEST_URI && 'O teste de integração usa uma conexão MongoDB real.' }, async () => {
+test('informa indisponibilidade e não aceita cadastro sem conexão ao banco', async () => {
   const server = app.listen(0);
   await once(server, 'listening');
   try {

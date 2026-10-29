@@ -3,7 +3,9 @@
   "framework": "express",
   "functions": {
     "server.js": {
-      "includeFiles": ["*.html", "recuperar-senha.js", "recuperar-senha.css"],
+      "includeFiles": [
+        "*.html"
+      ],
       "maxDuration": 30
     }
   }

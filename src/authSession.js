@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
-import { User } from './models/User.js';
+import { users } from './users.js';
+import { createHash } from 'node:crypto';
+import { sessionRevoked } from './securityStore.js';
 import { databaseReady } from './db.js';
 
 export const cookieName = 'lavemais_session';
@@ -17,15 +19,20 @@ export async function getSessionUser(req, res) {
   if (!token) return { error: 'UNAUTHENTICATED' };
   try {
     const config = req.app.locals.config;
-    const claims = jwt.verify(token, config.jwtSecret, { issuer: 'lavemais-api', audience: 'lavemais-client' });
-    const user = await User.findById(claims.sub);
+    const claims = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'], issuer: 'lavemais-api', audience: 'lavemais-client' });
+    if (typeof claims.sub !== 'string' || !Number.isFinite(claims.exp)) throw new jwt.JsonWebTokenError('Invalid claims');
+    if (await sessionRevoked(createHash('sha256').update(token).digest('hex'))) {
+      clearSessionCookies(res, config);
+      return { error: 'UNAUTHENTICATED' };
+    }
+    const user = await users.findById(claims.sub);
     if (!user || (claims.sv ?? 0) !== (user.sessionVersion || 0)) {
       clearSessionCookies(res, config);
       return { error: 'UNAUTHENTICATED' };
     }
     return { user };
   } catch (error) {
-    if (error?.name === 'JsonWebTokenError' || error?.name === 'TokenExpiredError') {
+    if (error?.name === 'JsonWebTokenError' || error?.name === 'TokenExpiredError' || error?.name === 'NotBeforeError' || error?.name === 'CastError') {
       clearSessionCookies(res, req.app.locals.config);
       return { error: 'UNAUTHENTICATED' };
     }

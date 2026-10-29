@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { readConfig } from './src/config.js';
-import { connectDatabase, databaseReady } from './src/db.js';
+import { connectDatabase, databaseReady, checkDatabaseHealth } from './src/db.js';
 import { formatSafeError } from './src/safeError.js';
 import authRouter from './src/routes/auth.js';
 import clientRouter from './src/routes/client.js';
@@ -29,6 +29,10 @@ app.use(helmet({
     },
   },
 }));
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/conta') || req.path === '/login') res.set('Cache-Control', 'no-store');
+  next();
+});
 app.use(express.json({ limit: '16kb' }));
 app.use(cookieParser());
 app.locals.config = {};
@@ -37,10 +41,11 @@ async function ensureVercelDatabase() {
   if (!config) {
     config = readConfig();
     app.locals.config = config;
+    app.set('trust proxy', config.trustProxy); 
   }
   if (databaseReady()) return;
   if (!databaseConnectionPromise) {
-  const pending = connectDatabase(config);
+    const pending = connectDatabase(config);
     databaseConnectionPromise = pending;
     try {
       await pending;
@@ -55,9 +60,9 @@ async function ensureVercelDatabase() {
 function initializeVercelDatabase(req, res, next) {
   if (!isVercelDeployment && process.env.NODE_ENV !== 'production') return next();
   if (!config) app.locals.config = { nodeEnv: 'production' };
-  if (req.method === 'POST' && req.path === '/api/auth/logout') return next();
+  if (req.method === 'POST' && req.path === '/api/auth/logout' && !req.cookies?.lavemais_session) return next();
   const needsDatabase = req.path.startsWith('/conta')
-    || req.path.startsWith('/api/');
+    || req.path.startsWith('/api/') || (req.path === '/login' && req.cookies?.lavemais_session);
   if (!needsDatabase) return next();
 
   ensureVercelDatabase().then(() => next()).catch((error) => {
@@ -78,8 +83,8 @@ function initializeVercelDatabase(req, res, next) {
 
 app.use(initializeVercelDatabase);
 
-app.get('/api/health', (_req, res) => {
-  const ready = databaseReady();
+app.get('/api/health', async (_req, res) => {
+  const ready = await checkDatabaseHealth();
   res.status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'unavailable', database: ready ? 'connected' : 'disconnected' });
 });
 app.use('/api/auth', authRouter);
@@ -111,32 +116,28 @@ app.get(['/conta', '/conta/:section'], async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 app.get('/cadastro', (_req, res) => res.redirect(302, '/login#cadastro'));
-app.get('/styles.css', (_req, res) => res.sendFile(path.join(__dirname, 'styles.css')));
-app.get('/recuperar-senha.css', (_req, res) => res.sendFile(path.join(__dirname, 'recuperar-senha.css')));
-app.get('/recuperar-senha.js', (_req, res) => res.sendFile(path.join(__dirname, 'recuperar-senha.js')));
-app.get('/app.js', (_req, res) => res.sendFile(path.join(__dirname, 'app.js')));
-app.get('/logo-lavemais.png', (_req, res) => res.sendFile(path.join(__dirname, 'logo-lavemais.png')));
-app.get('/lavemais-hero.jpg', (_req, res) => res.sendFile(path.join(__dirname, 'lavemais-hero.jpg')));
-app.get('/home.css', (_req, res) => res.sendFile(path.join(__dirname, 'home.css')));
-app.get('/home.js', (_req, res) => res.sendFile(path.join(__dirname, 'home.js')));
-app.get('/site-content.js', (_req, res) => res.sendFile(path.join(__dirname, 'site-content.js')));
-app.get('/dashboard.css', (_req, res) => res.sendFile(path.join(__dirname, 'dashboard.css')));
-app.get('/dashboard.js', (_req, res) => res.sendFile(path.join(__dirname, 'dashboard.js')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false, dotfiles: 'deny' }));
 app.use('/api', (_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } }));
 app.use((_req, res) => res.status(404).send('Página não encontrada.'));
-app.use((error, _req, res, _next) => {
-  console.error('Request failed:', error?.name || 'Error');
-  if (res.headersSent) return;
-  const status = error?.type === 'entity.parse.failed' ? 400 : 500;
-  return res.status(status).json({ error: { code: status === 400 ? 'INVALID_JSON' : 'INTERNAL_ERROR', message: status === 400 ? 'O conteúdo enviado não é um JSON válido.' : 'Não foi possível concluir a solicitação.' } });
+app.use((error, req, res, next) => {
+  console.error('Request failed:', req.method, req.path, formatSafeError(error));
+  if (res.headersSent) return next(error);
+  let status = 500, code = 'INTERNAL_ERROR', message = 'Não foi possível concluir a solicitação.';
+  if (error?.type === 'entity.parse.failed') { status = 400; code = 'INVALID_JSON'; message = 'O conteúdo enviado não é um JSON válido.'; }
+  else if (error?.type === 'entity.too.large') { status = 413; code = 'PAYLOAD_TOO_LARGE'; message = 'O conteúdo enviado excede o limite permitido.'; }
+  else if (['ValidationError', 'CastError'].includes(error?.name) || ['23514', '22007', '22008', '22P02'].includes(error?.code)) { status = 400; code = 'VALIDATION_ERROR'; message = 'Confira os dados informados.'; }
+  else if (error?.status >= 400 && error?.status < 500) { status = error.status; code = 'INVALID_REQUEST'; message = 'Solicitação inválida.'; }
+  else if (/Mongo.*(Network|Selection|Timeout)|MongooseServerSelectionError/.test(error?.name || '') || ['PGRST000', 'PGRST001', 'PGRST002', 'PGRST202', '42501', '42P01', 'ECONNREFUSED', 'ENOTFOUND', 'DATABASE_UNAVAILABLE'].includes(error?.code) || error?.message?.includes('fetch failed')) { status = 503; code = 'DATABASE_UNAVAILABLE'; message = 'O serviço está temporariamente indisponível.'; }
+  return res.status(status).json({ error: { code, message } });
 });
 
 async function start() {
   try {
     config = readConfig();
     app.locals.config = config;
+    app.set('trust proxy', config.trustProxy);
     await connectDatabase(config);
-    const backendName = config.supabaseUrl ? 'Supabase' : 'MongoDB';
+    const backendName = config.backend === 'supabase' ? 'Supabase' : 'MongoDB';
     app.listen(config.port, '0.0.0.0', () => console.log(`LaveMais disponível na porta ${config.port} (${backendName} conectado).`));
   } catch (error) {
     if (error.code === 'INVALID_CONFIG') console.error(`Não foi possível iniciar a LaveMais: ${error.message}`);

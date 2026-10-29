@@ -8,7 +8,7 @@
     <title>LaveMais — Mais tempo para o que importa</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/home.css" />
     <script type="module" src="/home.js"></script>
   </head>
@@ -26,7 +26,8 @@
         <nav class="site-navigation" id="site-navigation" aria-label="Navegação principal">
           <a href="#inicio">Início</a>
           <a href="#servicos">Serviços</a>
-          <a href="#planos">Planos e preços</a>
+          <a href="#como-funciona">Como funciona</a>
+          <a href="#planos">Recargas</a>
           <a href="#sobre">A LaveMais</a>
           <a href="#contato">Localização</a>
           <div class="nav-actions">
@@ -45,8 +46,8 @@
             <h1 id="hero-title">Mais tempo<br />para <em>o que importa.</em></h1>
             <p class="hero-description">Um jeito mais simples de cuidar das roupas e deixar a rotina mais leve.</p>
             <div class="hero-actions">
-              <a class="button button-turquoise" href="#servicos">Conheça a LaveMais <span aria-hidden="true">↓</span></a>
-              <a class="text-link" href="/login">Acessar minha conta <span aria-hidden="true">→</span></a>
+              <a class="button button-turquoise" href="#servicos">Conheça os serviços <span aria-hidden="true">↓</span></a>
+              <a class="button button-outline" href="/login" data-account-link>Acessar minha conta</a>
             </div>
             <span class="hero-detail"><span aria-hidden="true"></span> Cuidado prático, no seu ritmo</span>
           </div>
@@ -70,15 +71,19 @@
             <div class="service-list" data-services-list aria-label="Serviços da LaveMais">
               <p class="content-note" data-services-note>As informações sobre serviços e disponibilidade da unidade serão apresentadas aqui assim que estiverem confirmadas.</p>
             </div>
-            <div class="service-values" aria-label="Benefícios da proposta LaveMais"><span>Autonomia</span><span>Praticidade</span><span>Mais tempo</span></div>
+            <div class="service-values" aria-label="Benefícios da proposta LaveMais">
+              <article class="benefit-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M7 6h2m2 0h6m-9 7c2-2 4 2 8 0"/></svg><h3>Autonomia</h3><p>Cuidado prático, no seu ritmo.</p></article>
+              <article class="benefit-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 13 5 5L20 6"/><path d="M4 5h7M4 9h4"/></svg><h3>Praticidade</h3><p>Um jeito mais simples de cuidar das roupas.</p></article>
+              <article class="benefit-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg><h3>Mais tempo</h3><p>Mais espaço para aproveitar o seu dia.</p></article>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="start-here" aria-labelledby="start-title">
+      <section class="start-here" id="como-funciona" aria-labelledby="start-title">
         <div class="page-width start-inner">
           <div class="start-heading">
-            <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> Um bom começo</p>
+            <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> Como funciona</p>
             <h2 id="start-title">Tudo começa<br />com <em>uma escolha simples.</em></h2>
           </div>
           <ol class="start-steps">
@@ -97,6 +102,7 @@
               <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> Transparência em cada escolha</p>
               <h2 id="pricing-title">Escolha sua recarga<br /><em>e confira o bônus.</em></h2>
               <p>Escolha o valor da recarga e confira o bônus correspondente.</p>
+              <p class="pricing-availability">Consulte as opções abaixo. A recarga e o pagamento ainda não são realizados pelo site.</p>
               <a class="pricing-account" href="/login">Acesse sua conta <span aria-hidden="true">→</span></a>
             </div>
             <div class="price-list" data-price-list>
@@ -145,8 +151,8 @@
                 <a class="contact-link" data-map-link href="#contato" hidden target="_blank" rel="noopener noreferrer">Abrir rota <span aria-hidden="true">↗</span></a>
               </div>
               <div class="contact-meta">
-                <div class="contact-detail"><p class="contact-label">TELEFONE</p><p data-phone class="contact-value">—</p></div>
-                <div class="contact-detail"><p class="contact-label">HORÁRIOS</p><div data-hours class="contact-value">—</div></div>
+                <div class="contact-detail"><p class="contact-label">TELEFONE</p><p data-phone class="contact-value">A ser divulgado.</p></div>
+                <div class="contact-detail"><p class="contact-label">HORÁRIOS</p><div data-hours class="contact-value">A serem divulgados.</div></div>
                 <div class="contact-detail contact-whatsapp"><p class="contact-label">WHATSAPP</p><a class="contact-link whatsapp-action" href="#contato" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">Conversar com a equipe <span aria-hidden="true">↗</span></a><span class="contact-value whatsapp-unavailable" data-whatsapp-pending>Canal de atendimento a ser divulgado.</span></div>
               </div>
             </div>

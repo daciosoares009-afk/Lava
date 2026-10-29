@@ -1,18 +1,20 @@
 import { Router } from 'express';
-import { createHmac, randomInt } from 'node:crypto';
+import { createHmac, randomInt, randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { rateLimit } from 'express-rate-limit';
+import { persistentLimit, revokeSession } from '../securityStore.js';
+import { createHash } from 'node:crypto';
 import nodemailer from 'nodemailer';
-import { User } from '../models/User.js';
+import { users } from '../users.js';
 import { validateLogin, validatePasswordResetConfirmation, validatePasswordResetRequest, validateRegistration } from '../authValidation.js';
 import { databaseReady } from '../db.js';
 import { clearSessionCookies, cookieName, getSessionUser } from '../authSession.js';
 
 const router = Router();
-const authLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.' } } });
-const passwordResetRequestLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'RATE_LIMITED', message: 'Muitas solicitações. Aguarde antes de pedir outro código.' } } });
-const passwordResetConfirmLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.' } } });
+const authLimit = persistentLimit('auth-ip', 15 * 60_000, 10);
+const passwordResetRequestLimit = persistentLimit('reset-request-ip', 60 * 60_000, 5);
+const passwordResetConfirmLimit = persistentLimit('reset-confirm-ip', 15 * 60_000, 10);
+const resetAccountLimit = persistentLimit('reset-account', 15 * 60_000, 10, true);
 function ensureDatabase(_req, res, next) {
   if (!databaseReady()) return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'O serviço de cadastro e login está temporariamente indisponível.' } });
   return next();
@@ -23,7 +25,7 @@ function publicUser(user) {
 }
 
 function issueSession(res, user, secret, nodeEnv) {
-  const token = jwt.sign({ sub: user.id, sv: user.sessionVersion || 0 }, secret, { expiresIn: '7d', issuer: 'lavemais-api', audience: 'lavemais-client' });
+  const token = jwt.sign({ sub: user.id, sv: user.sessionVersion || 0 }, secret, { jwtid: randomUUID(), expiresIn: '7d', issuer: 'lavemais-api', audience: 'lavemais-client' });
   clearSessionCookies(res, { nodeEnv });
   res.cookie(cookieName, token, {
     httpOnly: true,
@@ -38,12 +40,12 @@ function passwordResetCodeHash(code, secret) {
   return createHmac('sha256', secret).update(code).digest('hex');
 }
 
-router.post('/register', authLimit, ensureDatabase, async (req, res, next) => {
+router.post('/register', ensureDatabase, authLimit, async (req, res, next) => {
   const { errors, value } = validateRegistration(req.body || {});
   if (Object.keys(errors).length) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Confira os campos informados.', fields: errors } });
   try {
     const passwordHash = await bcrypt.hash(value.password, 12);
-    const user = await User.create({
+    const user = await users.create({
       fullName: value.fullName,
       email: value.email,
       phone: value.phone,
@@ -52,7 +54,7 @@ router.post('/register', authLimit, ensureDatabase, async (req, res, next) => {
     });
     return res.status(201).json({ user: publicUser(user) });
   } catch (error) {
-    if (error?.code === 11000 && error?.keyPattern?.email) {
+    if ((error?.code === 11000 && error?.keyPattern?.email) || error?.code === '23505') {
       return res.status(409).json({ error: { code: 'EMAIL_IN_USE', message: 'Este e-mail já possui cadastro.' } });
     }
     if (error?.name === 'ValidationError') {
@@ -62,7 +64,7 @@ router.post('/register', authLimit, ensureDatabase, async (req, res, next) => {
   }
 });
 
-router.post('/password-reset/request', passwordResetRequestLimit, ensureDatabase, async (req, res, next) => {
+router.post('/password-reset/request', ensureDatabase, passwordResetRequestLimit, async (req, res, next) => {
   const { errors, value } = validatePasswordResetRequest(req.body || {});
   if (Object.keys(errors).length) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Informe um e-mail válido.', fields: errors } });
 
@@ -72,22 +74,9 @@ router.post('/password-reset/request', passwordResetRequestLimit, ensureDatabase
   }
 
   try {
-    const now = new Date();
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
     const codeHash = passwordResetCodeHash(code, config.jwtSecret);
-    const user = await User.findOneAndUpdate({
-      email: value.email,
-      $or: [
-        { passwordResetRequestedAt: { $exists: false } },
-        { passwordResetRequestedAt: { $lte: new Date(now.getTime() - 60_000) } },
-      ],
-    }, {
-      $set: {
-        passwordResetCodeHash: codeHash,
-        passwordResetExpiresAt: new Date(now.getTime() + 10 * 60_000),
-        passwordResetRequestedAt: now,
-      },
-    }, { timestamps: false });
+    const user = await users.requestReset(value.email, codeHash);
 
     if (user) {
       const transporter = nodemailer.createTransport({
@@ -96,9 +85,9 @@ router.post('/password-reset/request', passwordResetRequestLimit, ensureDatabase
         secure: config.smtp.port === 465,
         requireTLS: config.smtp.port !== 465,
         auth: { user: config.smtp.user, pass: config.smtp.password },
-        connectionTimeout: 10_000,
-        greetingTimeout: 10_000,
-        socketTimeout: 20_000,
+        connectionTimeout: 4_000,
+        greetingTimeout: 4_000,
+        socketTimeout: 8_000,
       });
       try {
         await transporter.sendMail({
@@ -108,9 +97,8 @@ router.post('/password-reset/request', passwordResetRequestLimit, ensureDatabase
           text: `Seu código para redefinir a senha é: ${code}\n\nEle expira em 10 minutos. Se você não solicitou a redefinição, ignore este e-mail.`,
         });
       } catch (error) {
-        await User.updateOne({ _id: user._id, passwordResetCodeHash: codeHash }, {
-          $unset: { passwordResetCodeHash: 1, passwordResetExpiresAt: 1, passwordResetRequestedAt: 1 },
-        });
+        try { await users.cancelReset(value.email, codeHash); }
+        catch (cleanupError) { console.error('Password reset cleanup failed:', cleanupError?.code || cleanupError?.name); }
         console.error('Password reset email delivery failed:', error?.name || 'Error');
         return res.status(503).json({ error: { code: 'EMAIL_DELIVERY_FAILED', message: 'Não foi possível enviar o código agora. Tente novamente mais tarde.' } });
       }
@@ -122,22 +110,14 @@ router.post('/password-reset/request', passwordResetRequestLimit, ensureDatabase
   }
 });
 
-router.post('/password-reset/confirm', passwordResetConfirmLimit, ensureDatabase, async (req, res, next) => {
+router.post('/password-reset/confirm', ensureDatabase, passwordResetConfirmLimit, resetAccountLimit, async (req, res, next) => {
   const { errors, value } = validatePasswordResetConfirmation(req.body || {});
   if (Object.keys(errors).length) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Confira o e-mail, o código e a nova senha.', fields: errors } });
 
   try {
     const passwordHash = await bcrypt.hash(value.password, 12);
-    const result = await User.updateOne({
-      email: value.email,
-      passwordResetCodeHash: passwordResetCodeHash(value.code, req.app.locals.config.jwtSecret),
-      passwordResetExpiresAt: { $gt: new Date() },
-    }, {
-      $set: { passwordHash },
-      $inc: { sessionVersion: 1 },
-      $unset: { passwordResetCodeHash: 1, passwordResetExpiresAt: 1, passwordResetRequestedAt: 1 },
-    });
-    if (!result.matchedCount) {
+    const consumed = await users.consumeReset(value.email, passwordResetCodeHash(value.code, req.app.locals.config.jwtSecret), passwordHash);
+    if (!consumed) {
       return res.status(400).json({ error: { code: 'INVALID_RESET_CODE', message: 'Código inválido ou expirado. Solicite um novo código.' } });
     }
     return res.json({ message: 'Senha redefinida com sucesso. Entre com sua nova senha.' });
@@ -146,11 +126,11 @@ router.post('/password-reset/confirm', passwordResetConfirmLimit, ensureDatabase
   }
 });
 
-router.post('/login', authLimit, ensureDatabase, async (req, res, next) => {
+router.post('/login', ensureDatabase, authLimit, async (req, res, next) => {
   const { errors, value } = validateLogin(req.body || {});
   if (Object.keys(errors).length) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Informe e-mail e senha válidos.', fields: errors } });
   try {
-    const user = await User.findOne({ email: value.email }).select('+passwordHash');
+    const user = await users.findForLogin(value.email);
     const matches = user ? await bcrypt.compare(value.password, user.passwordHash) : false;
     if (!matches) return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'E-mail ou senha incorretos.' } });
     issueSession(res, user, req.app.locals.config.jwtSecret, req.app.locals.config.nodeEnv);
@@ -170,9 +150,19 @@ router.get('/me', ensureDatabase, async (req, res, next) => {
   }
 });
 
-router.post('/logout', (req, res) => {
-  clearSessionCookies(res, req.app.locals.config);
-  return res.status(204).end();
+router.post('/logout', async (req, res, next) => {
+  const config = req.app.locals.config;
+  clearSessionCookies(res, config);
+  const token = req.cookies?.[cookieName];
+  if (!token) return res.status(204).end();
+  try {
+    const claims = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'], issuer: 'lavemais-api', audience: 'lavemais-client' });
+    await revokeSession(createHash('sha256').update(token).digest('hex'), new Date(claims.exp * 1000));
+    return res.status(204).end();
+  } catch (error) {
+    if (['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name)) return res.status(204).end();
+    return next(error);
+  }
 });
 
 export default router;

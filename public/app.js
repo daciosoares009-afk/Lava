@@ -21,6 +21,8 @@ function setMode(mode) {
   tabs.register.classList.toggle('is-active', registering);
   tabs.login.setAttribute('aria-selected', String(!registering));
   tabs.register.setAttribute('aria-selected', String(registering));
+  tabs.login.tabIndex = registering ? -1 : 0;
+  tabs.register.tabIndex = registering ? 0 : -1;
   tabBar.classList.toggle('register-active', registering);
   forms.login.hidden = registering;
   forms.register.hidden = !registering;
@@ -112,7 +114,7 @@ function validateForm(form, mode) {
   const fields = [...form.querySelectorAll('input[required]')];
   for (const input of fields) {
     input.removeAttribute('aria-invalid');
-    const value = input.value.trim();
+    const value = ['password', 'confirmPassword'].includes(input.name) ? input.value : input.value.trim();
     let message = '';
     if (!value) message = 'Este campo é obrigatório.';
     else if (input.type === 'email' && !validEmail(value)) message = 'Digite um e-mail válido.';
@@ -123,7 +125,8 @@ function validateForm(form, mode) {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       if (Number.isNaN(birth.getTime()) || birth >= today) message = 'Informe uma data de nascimento válida.';
     } else if (input.name === 'password') {
-      if (value.length < 8) message = 'A senha precisa ter pelo menos 8 caracteres.';
+      if (new TextEncoder().encode(value).length > 72) message = 'A senha deve ter no máximo 72 bytes.';
+      else if (value.length < 8) message = 'A senha precisa ter pelo menos 8 caracteres.';
       else if (mode === 'register' && (!/[A-Za-zÀ-ÿ]/.test(value) || !/\d/.test(value))) message = 'Inclua pelo menos uma letra e um número.';
     } else if (input.name === 'confirmPassword' && value !== form.elements.password.value) message = 'As senhas não coincidem.';
     if (message) {
@@ -202,5 +205,13 @@ logoutButton.addEventListener('click', async () => {
   }
 });
 
-if (window.location.hash === '#cadastro') setMode('register');
+setMode(window.location.hash === '#cadastro' ? 'register' : 'login');
 checkSession();
+
+tabBar.addEventListener('keydown', (event) => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  const registering = event.key === 'End' || (event.key !== 'Home' && tabs.login.getAttribute('aria-selected') === 'true');
+  setMode(registering ? 'register' : 'login');
+  (registering ? tabs.register : tabs.login).focus();
+});

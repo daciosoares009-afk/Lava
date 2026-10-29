@@ -7,11 +7,11 @@ import { app } from '../server.js';
 import { connectDatabase, databaseReady } from './db.js';
 import { User } from './models/User.js';
 
-const allowLegacyMongoTest = process.env.ENABLE_LEGACY_MONGO_TESTS === 'true';
-const testUri = process.env.MONGODB_TEST_URI || process.env.MONGODB_URI;
+const allowLegacyMongoTest = process.env.RUN_DATABASE_TESTS === 'true';
+const testUri = process.env.MONGODB_TEST_URI;
 
 test('cadastro, unicidade, login, sessão e persistência no MongoDB', {
-  skip: (!allowLegacyMongoTest || !testUri) && 'Legacy MongoDB integration is disabled during the Supabase migration. Set ENABLE_LEGACY_MONGO_TESTS=true and MONGODB_TEST_URI to run it explicitly.',
+  skip: (!allowLegacyMongoTest || !testUri) && 'Defina RUN_DATABASE_TESTS=true e MONGODB_TEST_URI para executar em banco dedicado.',
 }, async () => {
   const email = `lavemais-${randomUUID()}@example.test`;
   const password = 'TesteLavemais2026';

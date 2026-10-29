@@ -15,7 +15,7 @@ function setMenuOpen(open) {
 menuToggle.addEventListener('click', () => setMenuOpen(menuToggle.getAttribute('aria-expanded') !== 'true'));
 navigation.querySelectorAll('a[href^="#"]').forEach((link) => link.addEventListener('click', () => setMenuOpen(false)));
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') setMenuOpen(false); });
-window.addEventListener('resize', () => { if (window.innerWidth > 820) setMenuOpen(false); });
+window.addEventListener('resize', () => { if (window.innerWidth > 960) setMenuOpen(false); });
 
 function setWhatsApp(number) {
   const digits = String(number || '').replace(/\D/g, '');
@@ -165,3 +165,15 @@ renderServices();
 renderLegalLinks();
 setWhatsApp(siteContent.whatsappNumber);
 updateAccountLink();
+
+// Observe once; no hidden initial state so content remains accessible if JS fails.
+if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const entranceObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('has-entered');
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.benefit-card, .start-heading, .price-list, .about-copy').forEach((element) => entranceObserver.observe(element));
+}

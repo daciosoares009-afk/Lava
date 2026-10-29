@@ -1,0 +1,45 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { once } from 'node:events';
+import { databaseFixture, postgrestFetch } from '../test-support/postgres.js';
+
+test('Vercel cold start: página pública sem banco, inicialização concorrente, cookie Secure e health real', async t => {
+  process.env.VERCEL='1';
+  process.env.DATABASE_BACKEND='supabase';
+  process.env.SUPABASE_URL='https://cold-start.invalid';
+  process.env.SUPABASE_SERVICE_ROLE_KEY='test-service-key';
+  process.env.JWT_SECRET='test-cold-start-secret-12345678901234567890';
+  const {db}=await databaseFixture();
+  const nativeFetch=globalThis.fetch;
+  const transport=postgrestFetch(db);
+  let calls=0, unavailable=false;
+  t.mock.method(globalThis,'fetch',(url,init)=>{
+    if(!String(url).startsWith(process.env.SUPABASE_URL)) return nativeFetch(url,init);
+    calls++;
+    if(unavailable) return new Response(JSON.stringify({code:'PGRST000',message:'offline'}),{status:503,headers:{'content-type':'application/json'}});
+    return transport(url,init);
+  });
+  const {app}=await import('../server.js');
+  const {disconnectDatabase}=await import('./db.js');
+  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
+  t.after(async()=>{await new Promise(resolve=>server.close(resolve));await disconnectDatabase();await db.close();});
+  const base=`http://127.0.0.1:${server.address().port}`;
+  assert.equal((await nativeFetch(base+'/')).status,200);
+  assert.equal((await nativeFetch(base+'/login')).status,200);
+  assert.equal(calls,0,'public routes must not initialize the database');
+  const responses=await Promise.all([nativeFetch(base+'/api/health'),nativeFetch(base+'/api/health')]);
+  assert.deepEqual(responses.map(r=>r.status),[200,200]);
+  assert.equal(calls,3,'one shared initialization and two live health checks');
+  const credentials={email:'cold@example.test',password:'ColdStart123'};
+  const post=(path,body)=>nativeFetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  assert.equal((await post('/api/auth/register',{...credentials,fullName:'Cliente Cold',phone:'11999999999',birthDate:'1990-01-01'})).status,201);
+  const login=await post('/api/auth/login',credentials);assert.equal(login.status,200);
+  const setCookie=login.headers.getSetCookie().find(c=>/^lavemais_session=.+; Path=\//.test(c));
+  assert.match(setCookie,/Secure/);assert.match(setCookie,/HttpOnly/);assert.match(setCookie,/SameSite=Strict/);
+  const cookie=setCookie.split(';')[0];
+  const redirect=await nativeFetch(base+'/login?next=%2Fconta%2Fperfil',{headers:{Cookie:cookie},redirect:'manual'});
+  assert.equal(redirect.status,302);assert.equal(redirect.headers.get('location'),'/conta/perfil');
+  unavailable=true;
+  assert.equal((await nativeFetch(base+'/api/health')).status,503);
+  assert.equal((await nativeFetch(base+'/')).status,200);
+});

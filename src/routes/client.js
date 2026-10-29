@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { User } from '../models/User.js';
+import { users } from '../users.js';
 import { requireAuth } from '../authSession.js';
 import { validateProfileUpdate } from '../profileValidation.js';
 
@@ -24,7 +24,7 @@ router.patch('/profile', async (req, res, next) => {
   const { errors, value } = validateProfileUpdate(req.body);
   if (Object.keys(errors).length) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Confira os campos informados.', fields: errors } });
   try {
-    const user = await User.findByIdAndUpdate(req.authenticatedUser.id, { $set: value }, { new: true, runValidators: true });
+    const user = await users.updateProfile(req.authenticatedUser.id, value);
     if (!user) return res.status(401).json({ error: { code: 'UNAUTHENTICATED', message: 'Entre para acessar sua conta.' } });
     return res.json({ user: profileUser(user) });
   } catch (error) {

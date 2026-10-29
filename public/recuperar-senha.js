@@ -31,7 +31,7 @@ function validateForm(form, confirmation = false) {
   let firstInvalid = null;
   for (const input of form.querySelectorAll('input[required]')) {
     let message = '';
-    const value = input.value.trim();
+    const value = ['password', 'confirmPassword'].includes(input.name) ? input.value : input.value.trim();
     if (!value) message = 'Este campo é obrigatório.';
     else if (input.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)) message = 'Digite um e-mail válido.';
     else if (input.name === 'code' && !/^\d{6}$/.test(value)) message = 'Digite o código de 6 dígitos recebido por e-mail.';

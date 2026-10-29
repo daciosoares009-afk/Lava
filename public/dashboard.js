@@ -12,13 +12,25 @@ function setMenuOpen(open) {
   sidebar.classList.toggle('is-open', open);
   navBackdrop.hidden = !open;
   document.body.classList.toggle('menu-open', open);
+  sidebar.inert = window.innerWidth <= 650 && !open;
   menuToggle.setAttribute('aria-expanded', String(open));
   menuToggle.setAttribute('aria-label', open ? 'Fechar navegação' : 'Abrir navegação');
 }
 
-menuToggle.addEventListener('click', () => setMenuOpen(menuToggle.getAttribute('aria-expanded') !== 'true'));
+menuToggle.addEventListener('click', () => {
+  const open = menuToggle.getAttribute('aria-expanded') !== 'true';
+  setMenuOpen(open);
+  if (open) sidebar.querySelector('a')?.focus();
+});
+window.addEventListener('resize', () => setMenuOpen(false));
+sidebar.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab' || window.innerWidth > 650 || menuToggle.getAttribute('aria-expanded') !== 'true') return;
+  const nodes = [...sidebar.querySelectorAll('a[href], button:not([disabled])')];
+  if (event.shiftKey && document.activeElement === nodes[0]) { event.preventDefault(); nodes.at(-1).focus(); }
+  else if (!event.shiftKey && document.activeElement === nodes.at(-1)) { event.preventDefault(); nodes[0].focus(); }
+});
 navBackdrop.addEventListener('click', () => setMenuOpen(false));
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape') setMenuOpen(false); });
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') { setMenuOpen(false); menuToggle.focus(); } });
 
 function panelFromLocation() {
   const path = window.location.pathname;
@@ -192,7 +204,7 @@ function showFieldErrors(fields = {}) {
 async function loadProfile() {
   try {
     const response = await fetch('/api/client/profile', { credentials: 'same-origin' });
-    if (response.status === 401) { window.location.replace('/login?next=%2Fconta'); return; }
+    if (response.status === 401) { window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`); return; }
     if (!response.ok) throw new Error('profile_unavailable');
     const { user } = await response.json();
     profileForm.elements.fullName.value = user.fullName || '';

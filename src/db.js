@@ -1,72 +1,51 @@
 import mongoose from 'mongoose';
 import { createClient } from '@supabase/supabase-js';
-
-let supabaseClient = null;
-let activeBackend = null;
-
-async function connectMongoDatabase(uri) {
-  mongoose.set('strictQuery', true);
-  await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
-  await mongoose.model('User').init();
-  activeBackend = 'mongo';
-}
-
-async function connectSupabaseDatabase({ url, key }) {
-  supabaseClient = createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  });
-  activeBackend = 'supabase';
-}
-
+let supabaseClient;
+let activeBackend;
+const boundedFetch = (input, init = {}) => fetch(input, { ...init, signal: init.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000) });
 export async function connectDatabase(configOrUri) {
-  if (!configOrUri) {
-    throw new Error('Nenhuma configuração de banco informada.');
+  const config = typeof configOrUri === 'string' ? { backend: 'mongo', mongoUri: configOrUri } : configOrUri;
+  if (!config || !['mongo', 'supabase'].includes(config.backend)) throw new Error('Backend de banco inválido.');
+  if (activeBackend && activeBackend !== config.backend) throw new Error('Desconecte o banco antes de trocar de backend.');
+  if (config.backend === 'mongo') {
+    mongoose.set('strictQuery', true);
+    await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 5000, maxPoolSize: 5 });
+    const { MongooseUser } = await import('./models/User.js');
+    await MongooseUser.init();
+    const { initializeSecurityIndexes } = await import('./securityStore.js');
+    await initializeSecurityIndexes();
+    activeBackend = 'mongo';
+    return mongoose.connection;
   }
-
-  if (typeof configOrUri === 'object') {
-    if (configOrUri.supabaseUrl && (configOrUri.supabaseServiceRoleKey || configOrUri.supabaseAnonKey)) {
-      await connectSupabaseDatabase({
-        url: configOrUri.supabaseUrl,
-        key: configOrUri.supabaseServiceRoleKey || configOrUri.supabaseAnonKey,
-      });
-      return supabaseClient;
-    }
-    if (configOrUri.mongoUri) {
-      await connectMongoDatabase(configOrUri.mongoUri);
-      return mongoose.connection;
-    }
-  }
-
-  const uri = String(configOrUri).trim();
-  if (uri.startsWith('http://') || uri.startsWith('https://')) {
-    await connectSupabaseDatabase({
-      url: uri,
-      key: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
-    });
-    return supabaseClient;
-  }
-
-  await connectMongoDatabase(uri);
-  return mongoose.connection;
+  if (!config.supabaseUrl || !config.supabaseServiceRoleKey) throw new Error('Configuração Supabase incompleta.');
+  const client = createClient(config.supabaseUrl, config.supabaseServiceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: boundedFetch },
+  });
+  const { data, error } = await client.rpc('lavemais_health');
+  if (error || data !== 1) throw Object.assign(new Error('Esquema Supabase indisponível ou desatualizado.'), { code: error?.code || 'DATABASE_UNAVAILABLE' });
+  supabaseClient = client;
+  activeBackend = 'supabase';
+  return client;
 }
-
-export function getDatabaseBackend() {
-  return activeBackend;
-}
-
+export function getDatabaseBackend() { return activeBackend; }
 export function getSupabaseClient() {
-  if (!supabaseClient) {
-    throw new Error('Supabase ainda não foi inicializado.');
-  }
+  if (!supabaseClient || activeBackend !== 'supabase') throw new Error('Supabase ainda não foi inicializado.');
   return supabaseClient;
 }
-
 export function databaseReady() {
-  return (activeBackend === 'supabase' && Boolean(supabaseClient))
-    || (activeBackend === 'mongo' && mongoose.connection.readyState === 1)
-    || (!activeBackend && Boolean(process.env.SUPABASE_URL));
+  return activeBackend === 'supabase' ? Boolean(supabaseClient) : activeBackend === 'mongo' && mongoose.connection.readyState === 1;
+}
+export async function checkDatabaseHealth() {
+  if (!databaseReady()) return false;
+  try {
+    if (activeBackend === 'mongo') await mongoose.connection.db.admin().ping();
+    else { const { data, error } = await supabaseClient.rpc('lavemais_health'); if (error || data !== 1) return false; }
+    return true;
+  } catch { return false; }
+}
+export async function disconnectDatabase() {
+  if (mongoose.connection.readyState) await mongoose.disconnect();
+  activeBackend = undefined;
+  supabaseClient = undefined;
 }

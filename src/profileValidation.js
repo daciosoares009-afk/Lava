@@ -12,7 +12,7 @@ export function validateProfileUpdate(body) {
   if ('phone' in body) {
     value.phone = typeof body.phone === 'string' ? body.phone.trim() : '';
     const digits = value.phone.replace(/\D/g, '');
-    if (digits.length < 10 || digits.length > 15) errors.phone = 'Informe um telefone válido com DDD.';
+    if (digits.length < 10 || digits.length > 15 || value.phone.length > 24) errors.phone = 'Informe um telefone válido com DDD.';
   }
   if ('birthDate' in body) {
     const date = typeof body.birthDate === 'string' ? new Date(`${body.birthDate}T00:00:00.000Z`) : new Date('invalid');
