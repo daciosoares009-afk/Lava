@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": "^24.15.0 || >=26.0.0"
   },
   "scripts": {
     "start": "node server.js",
@@ -26,6 +26,7 @@
     "nodemailer": "^10.1.4"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.13"
+    "@electric-sql/pglite": "^0.5.13",
+    "jsdom": "^30.1.3"
   }
 }

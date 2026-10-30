@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 import { MongooseUser } from '../src/models/User.js';
 import { validateProfileUpdate, } from '../src/profileValidation.js';
-import { normalizeEmail } from '../src/authValidation.js';
+import { normalizeEmail, validatePasswordResetRequest } from '../src/authValidation.js';
 
 dotenv.config();
 const apply = process.argv.includes('--apply');
@@ -27,7 +27,7 @@ try {
     const email=normalizeEmail(row.email);
     const birthDate=row.birthDate?.toISOString().slice(0,10);
     const {errors}=validateProfileUpdate({fullName:row.fullName,phone:row.phone,birthDate});
-    if(Object.keys(errors).length || !email || seen.has(email) || !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(row.passwordHash || '')) throw new Error('Origem contém registros inválidos ou e-mails duplicados. Nenhuma nova escrita será iniciada nesta execução.');
+    if(Object.keys(errors).length || Object.keys(validatePasswordResetRequest({email}).errors).length || seen.has(email) || !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(row.passwordHash || '')) throw new Error('Origem contém registros inválidos ou e-mails duplicados. Nenhuma nova escrita será iniciada nesta execução.');
     seen.add(email);
     const {data,error}=await destination.from('users').select('id,legacy_mongo_id,full_name,email,phone,birth_date,password_hash,created_at').eq('email',email).maybeSingle();
     if(error) throw new Error('Não foi possível reconciliar o destino.');

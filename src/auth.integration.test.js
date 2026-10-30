@@ -13,6 +13,7 @@ const testUri = process.env.MONGODB_TEST_URI;
 test('cadastro, unicidade, login, sessão e persistência no MongoDB', {
   skip: (!allowLegacyMongoTest || !testUri) && 'Defina RUN_DATABASE_TESTS=true e MONGODB_TEST_URI para executar em banco dedicado.',
 }, async () => {
+  assert.notEqual(testUri, process.env.MONGODB_URI, 'O teste exige URI diferente do banco principal.');
   const email = `lavemais-${randomUUID()}@example.test`;
   const password = 'TesteLavemais2026';
   const sessionSecret = 'test-secret-only-for-local-integration-tests-32';

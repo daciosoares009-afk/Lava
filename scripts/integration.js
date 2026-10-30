@@ -8,4 +8,4 @@ if (!process.env.MONGODB_TEST_URI || process.env.MONGODB_TEST_URI === process.en
 const result = spawnSync(process.execPath, ['--test', 'src/auth.integration.test.js'], {
   stdio: 'inherit', env: { ...process.env, NODE_ENV: 'test', RUN_DATABASE_TESTS: 'true' },
 });
-process.exit(result.status || 0);
+process.exit(result.status ?? 1);

@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { isIP } from 'node:net';
 import { fileURLToPath } from 'node:url';
 if (!process.env.NODE_TEST_CONTEXT) dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 function invalid(message) {
@@ -33,7 +34,12 @@ export function readConfig(env = process.env) {
   smtp.configured = Boolean(smtp.host && smtp.user && smtp.password && smtp.from);
   if (smtp.configured && ![465, 587].includes(smtp.port)) invalid('SMTP_PORT deve ser 465 ou 587.');
   if ([smtp.host, smtp.user, smtp.password, smtp.from].some(Boolean) && !smtp.configured) invalid('Preencha todas as variáveis SMTP ou deixe todas vazias.');
-  const trustProxy = env.TRUST_PROXY?.trim() || false;
-  if (trustProxy === 'true' || /^\d+$/.test(trustProxy || '')) invalid('TRUST_PROXY deve listar IPs/sub-redes confiáveis, nunca true ou número de saltos.');
-  return { port, backend, jwtSecret, mongoUri, supabaseUrl, supabaseServiceRoleKey, nodeEnv, smtp, trustProxy };
+  const proxyValue = env.TRUST_PROXY?.trim();
+  const trustProxy = !proxyValue || proxyValue === 'false' ? false : proxyValue.split(',').map(value => value.trim());
+  if (trustProxy && trustProxy.some(value => {
+    const [ip, prefix, extra] = value.split('/');
+    const family = isIP(ip);
+    return !family || extra !== undefined || (prefix !== undefined && (!/^\d+$/.test(prefix) || Number(prefix) > (family === 4 ? 32 : 128)));
+  })) invalid('TRUST_PROXY deve listar IPs/CIDRs confiáveis; true e número de saltos não são permitidos.');
+  return { port, backend, jwtSecret, mongoUri, supabaseUrl, supabaseServiceRoleKey, nodeEnv, smtp, trustProxy, vercelDeployment: deployed };
 }

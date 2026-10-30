@@ -12,6 +12,7 @@ function setMenuOpen(open) {
   sidebar.classList.toggle('is-open', open);
   navBackdrop.hidden = !open;
   document.body.classList.toggle('menu-open', open);
+  if (!open && window.innerWidth <= 650 && sidebar.contains(document.activeElement)) menuToggle.focus();
   sidebar.inert = window.innerWidth <= 650 && !open;
   menuToggle.setAttribute('aria-expanded', String(open));
   menuToggle.setAttribute('aria-label', open ? 'Fechar navegação' : 'Abrir navegação');

@@ -1,10 +1,12 @@
 import express from 'express';
+import { once } from 'node:events';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { readConfig } from './src/config.js';
-import { connectDatabase, databaseReady, checkDatabaseHealth } from './src/db.js';
+import { connectDatabase, databaseReady, checkDatabaseHealth, disconnectDatabase } from './src/db.js';
 import { formatSafeError } from './src/safeError.js';
 import authRouter from './src/routes/auth.js';
 import clientRouter from './src/routes/client.js';
@@ -30,6 +32,8 @@ app.use(helmet({
   },
 }));
 app.use((req, res, next) => {
+  req.requestId = randomUUID();
+  res.set('X-Request-ID', req.requestId);
   if (req.path.startsWith('/api') || req.path.startsWith('/conta') || req.path === '/login') res.set('Cache-Control', 'no-store');
   next();
 });
@@ -41,7 +45,7 @@ async function ensureVercelDatabase() {
   if (!config) {
     config = readConfig();
     app.locals.config = config;
-    app.set('trust proxy', config.trustProxy); 
+    app.set('trust proxy', config.trustProxy);
   }
   if (databaseReady()) return;
   if (!databaseConnectionPromise) {
@@ -120,14 +124,14 @@ app.use(express.static(path.join(__dirname, 'public'), { index: false, dotfiles:
 app.use('/api', (_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } }));
 app.use((_req, res) => res.status(404).send('Página não encontrada.'));
 app.use((error, req, res, next) => {
-  console.error('Request failed:', req.method, req.path, formatSafeError(error));
+  console.error('Request failed:', req.requestId, req.method, req.path, formatSafeError(error?.type === 'entity.parse.failed' ? { name: 'SyntaxError', code: 'INVALID_JSON', message: 'Invalid JSON body' } : error));
   if (res.headersSent) return next(error);
   let status = 500, code = 'INTERNAL_ERROR', message = 'Não foi possível concluir a solicitação.';
   if (error?.type === 'entity.parse.failed') { status = 400; code = 'INVALID_JSON'; message = 'O conteúdo enviado não é um JSON válido.'; }
   else if (error?.type === 'entity.too.large') { status = 413; code = 'PAYLOAD_TOO_LARGE'; message = 'O conteúdo enviado excede o limite permitido.'; }
   else if (['ValidationError', 'CastError'].includes(error?.name) || ['23514', '22007', '22008', '22P02'].includes(error?.code)) { status = 400; code = 'VALIDATION_ERROR'; message = 'Confira os dados informados.'; }
   else if (error?.status >= 400 && error?.status < 500) { status = error.status; code = 'INVALID_REQUEST'; message = 'Solicitação inválida.'; }
-  else if (/Mongo.*(Network|Selection|Timeout)|MongooseServerSelectionError/.test(error?.name || '') || ['PGRST000', 'PGRST001', 'PGRST002', 'PGRST202', '42501', '42P01', 'ECONNREFUSED', 'ENOTFOUND', 'DATABASE_UNAVAILABLE'].includes(error?.code) || error?.message?.includes('fetch failed')) { status = 503; code = 'DATABASE_UNAVAILABLE'; message = 'O serviço está temporariamente indisponível.'; }
+  else if (/Mongo.*(Network|Selection|Timeout)|MongooseServerSelectionError|AbortError|TimeoutError/.test(error?.name || '') || ['PGRST000', 'PGRST001', 'PGRST002', 'PGRST202', '42501', '42P01', 'ECONNREFUSED', 'ENOTFOUND', 'DATABASE_UNAVAILABLE'].includes(error?.code) || error?.message?.includes('fetch failed')) { status = 503; code = 'DATABASE_UNAVAILABLE'; message = 'O serviço está temporariamente indisponível.'; }
   return res.status(status).json({ error: { code, message } });
 });
 
@@ -138,10 +142,14 @@ async function start() {
     app.set('trust proxy', config.trustProxy);
     await connectDatabase(config);
     const backendName = config.backend === 'supabase' ? 'Supabase' : 'MongoDB';
-    app.listen(config.port, '0.0.0.0', () => console.log(`LaveMais disponível na porta ${config.port} (${backendName} conectado).`));
+    const server = app.listen(config.port, '0.0.0.0');
+    await once(server, 'listening');
+    console.log(`LaveMais disponível na porta ${config.port} (${backendName} conectado).`);
+    return server;
   } catch (error) {
     if (error.code === 'INVALID_CONFIG') console.error(`Não foi possível iniciar a LaveMais: ${error.message}`);
     else console.error(`Não foi possível conectar ao MongoDB ou iniciar o servidor: ${formatSafeError(error)}`);
+    await disconnectDatabase();
     process.exitCode = 1;
   }
 }

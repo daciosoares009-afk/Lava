@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { isIP } from 'node:net';
 import { createHmac } from 'node:crypto';
 import { getDatabaseBackend, getSupabaseClient } from './db.js';
 
@@ -27,6 +28,20 @@ export async function incrementBucket(key, windowMs) {
   const { data, error } = await getSupabaseClient().rpc('lavemais_rate_limit', { p_key: id, p_expires_at: expiresAt.toISOString() });
   if (error) throw error;
   return { hits: data, expiresAt };
+}
+export function clientIdentity(req) {
+  // Vercel overwrites X-Forwarded-For; other hosts must configure trusted CIDRs.
+  const forwarded = req.app.locals.config.vercelDeployment ? req.headers['x-forwarded-for'] : undefined;
+  let ip = typeof forwarded === 'string' && isIP(forwarded.trim()) ? forwarded.trim() : req.ip;
+  if (ip?.startsWith('::ffff:') && isIP(ip.slice(7)) === 4) ip = ip.slice(7);
+  if (isIP(ip) === 6) {
+    const [left, right = ''] = ip.split('::');
+    const head = left ? left.split(':') : [];
+    const tail = right ? right.split(':') : [];
+    const full = ip.includes('::') ? [...head, ...Array(8 - head.length - tail.length).fill('0'), ...tail] : head;
+    return full.slice(0, 4).map(part => Number.parseInt(part, 16).toString(16)).join(':') + '::/64';
+  }
+  return ip;
 }
 export function persistentLimit(scope, windowMs, limit, account = false) {
   return async (req, res, next) => {

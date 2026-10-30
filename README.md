@@ -4,7 +4,7 @@ Aplicação Node.js/Express com autenticação própria (bcrypt + JWT HttpOnly).
 
 ## Requisitos e setup
 
-- Node.js 22 ou superior; `.nvmrc` fixa Node 24 para desenvolvimento e CI.
+- Node.js 24.15.0 (ou versão 24 posterior); `.nvmrc` fixa Node 24.15.0 para desenvolvimento e CI.
 - Execute `npm ci`, copie `.env.example` para `.env` e configure um backend.
 - MongoDB: `DATABASE_BACKEND=mongo`, `MONGODB_URI` incluindo o nome do banco e acesso de rede autorizado no Atlas.
 - Supabase: `DATABASE_BACKEND=supabase`, `SUPABASE_URL` HTTPS e `SUPABASE_SERVICE_ROLE_KEY`. Execute **todo** `supabase/schema.sql` como administrador no SQL Editor antes de iniciar. O script é transacional e pode ser reaplicado. Ele cria tabela, RPCs, índices, RLS e revoga acesso de `anon`/`authenticated`. Nunca use a chave privilegiada no navegador. `SUPABASE_ANON_KEY` não é usada pelo servidor.
@@ -12,7 +12,7 @@ Aplicação Node.js/Express com autenticação própria (bcrypt + JWT HttpOnly).
 - Se ambos os bancos estiverem configurados, a escolha explícita é obrigatória. No `.env` local deste checkout foi explicitado Supabase para preservar o destino da migração; para trabalhar com Atlas, altere para `mongo`.
 - SMTP é opcional: deixe host/usuário/senha/remetente todos vazios para desabilitar, ou configure todos. Porta 465 usa TLS; 587 exige STARTTLS. Valide remetente autorizado e SPF/DKIM/DMARC no provedor.
 - `npm start` ou `npm run dev`; abra `http://localhost:3000`. O servidor local aguarda banco e índices. Se faltar esquema/permissão, falha com mensagem sanitizada em vez de fingir conexão.
-- `TRUST_PROXY` vazio usa conexão direta. Atrás de proxy, configure **somente** IPs/CIDRs confiáveis da infraestrutura. Não use `true` ou contagem de saltos. Confira o IP efetivo em homologação; uma configuração errada pode agrupar usuários no mesmo limite. Na Vercel, valide a integração da versão/runtime e sua cadeia de proxies antes de liberar tráfego.
+- `TRUST_PROXY` vazio usa conexão direta. Atrás de proxy, configure **somente** IPs/CIDRs confiáveis da infraestrutura. Não use `true` ou contagem de saltos. Confira o IP efetivo em homologação; uma configuração errada pode agrupar usuários no mesmo limite. Na Vercel, o limitador usa o `X-Forwarded-For` sobrescrito pela plataforma; em outros hosts ignora esse cabeçalho sem proxy confiável. IPv6 é agrupado por /64. Confira o comportamento em Preview. Referências: [Vercel](https://vercel.com/docs/headers/request-headers) e [Express](https://expressjs.com/en/guide/behind-proxies/).
 
 ## Rotas existentes
 
