@@ -46,7 +46,7 @@ export function clientIdentity(req) {
 export function persistentLimit(scope, windowMs, limit, account = false) {
   return async (req, res, next) => {
     try {
-      const identity = account ? String(req.body?.email || '').trim().toLowerCase() : req.ip;
+      const identity = account ? String(req.body?.email || '').trim().toLowerCase() : clientIdentity(req);
       const hash = createHmac('sha256', req.app.locals.config.jwtSecret).update(`${scope}:${identity}`).digest('hex');
       const { hits, expiresAt } = await incrementBucket(hash, windowMs);
       if (hits <= limit) return next();

@@ -277,3 +277,110 @@ renderPlans();
 renderStoreInfo();
 showPanel(panelFromLocation(), false);
 loadProfile();
+
+const appointmentForm = document.querySelector('#appointment-form');
+const appointmentList = document.querySelector('#appointment-list');
+const appointmentFeedback = document.querySelector('#appointment-feedback');
+const appointmentStatus = document.querySelector('#appointment-status');
+const appointmentReset = document.querySelector('#appointment-reset');
+const appointmentPrev = document.querySelector('#appointment-prev');
+const appointmentNext = document.querySelector('#appointment-next');
+let appointmentPage = 1, appointmentGeneration = 0, editingAppointment = null;
+const localToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+appointmentForm.elements.preferredDate.min = localToday;
+
+function appointmentMessage(message, error = false) {
+  appointmentFeedback.textContent = message;
+  appointmentFeedback.classList.toggle('is-error', error);
+}
+async function appointmentApi(path, method = 'GET', body) {
+  const response = await fetch('/api/client/appointments' + path, {
+    method, credentials: 'same-origin',
+    ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
+  });
+  if (response.status === 401) { window.location.replace('/login?next=%2Fconta%2Fagendamentos'); throw new Error('Entre novamente para continuar.'); }
+  const data = await response.json();
+  if (!response.ok) throw new Error([data.error?.message, ...Object.values(data.error?.fields || {})].filter(Boolean).join(' ') || 'Não foi possível concluir a operação.');
+  return data;
+}
+function resetAppointment() {
+  editingAppointment = null;
+  appointmentForm.reset();
+  appointmentReset.hidden = true;
+  appointmentForm.querySelector('[type=submit]').textContent = 'Enviar solicitação';
+}
+async function loadAppointments() {
+  const generation = ++appointmentGeneration;
+  appointmentList.setAttribute('aria-busy', 'true');
+  appointmentPrev.disabled = true; appointmentNext.disabled = true;
+  appointmentList.textContent = 'Carregando solicitações…';
+  try {
+    const data = await appointmentApi(`?page=${appointmentPage}&status=${encodeURIComponent(appointmentStatus.value)}`);
+    if (generation !== appointmentGeneration) return;
+    if (!Array.isArray(data.appointments)) throw new Error('Resposta inválida ao carregar as solicitações.');
+    appointmentList.replaceChildren();
+    if (!data.appointments.length) appointmentList.textContent = 'Nenhuma solicitação encontrada neste filtro.';
+    for (const item of data.appointments) {
+      const article = document.createElement('article'); article.className = 'appointment-record';
+      const heading = document.createElement('h2'); heading.textContent = item.service;
+      const detail = document.createElement('p');
+      const date = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(`${item.preferredDate}T00:00:00Z`));
+      detail.textContent = `${date} · ${item.status === 'pending' ? 'Pendente de confirmação' : 'Cancelada'}`;
+      const notes = document.createElement('p'); notes.textContent = item.notes;
+      article.append(heading, detail, notes);
+      if (item.status === 'pending') {
+        const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'text-link'; edit.textContent = 'Editar';
+        edit.addEventListener('click', () => {
+          editingAppointment = item;
+          for (const key of ['service', 'preferredDate', 'notes']) appointmentForm.elements[key].value = item[key];
+          appointmentReset.hidden = false;
+          appointmentForm.querySelector('[type=submit]').textContent = 'Salvar solicitação';
+          appointmentMessage('Editando a solicitação selecionada.');
+          appointmentForm.elements.service.focus();
+        });
+        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'text-link'; cancel.textContent = 'Cancelar solicitação';
+        cancel.addEventListener('click', async () => {
+          if (!window.confirm('Cancelar esta solicitação de atendimento?')) return;
+          cancel.disabled = true;
+          try {
+            await appointmentApi(`/${item.id}/cancel`, 'POST', { revision: item.revision });
+            if (editingAppointment?.id === item.id) resetAppointment();
+            appointmentMessage('Solicitação cancelada.');
+            await loadAppointments();
+          } catch (error) { appointmentMessage(error.message || 'Falha de conexão. Atualize o histórico antes de tentar novamente.', true); cancel.disabled = false; }
+        });
+        article.append(edit, cancel);
+      }
+      appointmentList.append(article);
+    }
+    appointmentPrev.disabled = appointmentPage <= 1;
+    appointmentNext.disabled = !data.hasMore;
+    document.querySelector('#appointment-page').textContent = `Página ${appointmentPage}`;
+  } catch (error) {
+    if (generation === appointmentGeneration) appointmentList.textContent = error.message || 'Não foi possível carregar o histórico. Use Atualizar histórico para tentar novamente.';
+  } finally { if (generation === appointmentGeneration) appointmentList.setAttribute('aria-busy', 'false'); }
+}
+appointmentForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!appointmentForm.reportValidity()) return;
+  const button = appointmentForm.querySelector('[type=submit]');
+  const label = button.textContent;
+  button.disabled = true; button.textContent = 'Salvando…';
+  appointmentReset.disabled = true;
+  const snapshot = editingAppointment;
+  try {
+    const body = Object.fromEntries(['service', 'preferredDate', 'notes'].map(key => [key, appointmentForm.elements[key].value]));
+    if (snapshot) body.revision = snapshot.revision;
+    await appointmentApi(snapshot ? `/${snapshot.id}` : '', snapshot ? 'PATCH' : 'POST', body);
+    resetAppointment(); appointmentPage = 1;
+    appointmentMessage('Solicitação salva. O atendimento ainda precisa ser confirmado com a unidade.');
+    await loadAppointments();
+  } catch (error) { appointmentMessage(error.message || 'Falha de conexão. Consulte o histórico antes de reenviar.', true); }
+  finally { button.disabled = false; appointmentReset.disabled = false; button.textContent = editingAppointment ? label : 'Enviar solicitação'; }
+});
+appointmentReset.addEventListener('click', () => { resetAppointment(); appointmentMessage(''); });
+appointmentStatus.addEventListener('change', () => { appointmentPage = 1; loadAppointments(); });
+document.querySelector('#appointment-refresh').addEventListener('click', () => loadAppointments());
+appointmentPrev.addEventListener('click', () => { appointmentPage--; loadAppointments(); });
+appointmentNext.addEventListener('click', () => { appointmentPage++; loadAppointments(); });
+loadAppointments();

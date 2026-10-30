@@ -10,6 +10,7 @@ import { connectDatabase, databaseReady, checkDatabaseHealth, disconnectDatabase
 import { formatSafeError } from './src/safeError.js';
 import authRouter from './src/routes/auth.js';
 import clientRouter from './src/routes/client.js';
+import appointmentsRouter from './src/routes/appointments.js';
 import { getSessionUser } from './src/authSession.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -39,6 +40,12 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '16kb' }));
 app.use(cookieParser());
+app.use('/api', (req, res, next) => {
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.get('Sec-Fetch-Site') === 'cross-site') {
+    return res.status(403).json({ error: { code: 'CROSS_SITE_REQUEST', message: 'Solicitação de origem não permitida.' } });
+  }
+  return next();
+});
 app.locals.config = {};
 
 async function ensureVercelDatabase() {
@@ -93,6 +100,7 @@ app.get('/api/health', async (_req, res) => {
 });
 app.use('/api/auth', authRouter);
 app.use('/api/client', clientRouter);
+app.use('/api/client/appointments', appointmentsRouter);
 app.get(['/', '/index.html'], (_req, res) => res.sendFile(path.join(__dirname, 'home.html')));
 app.get('/login', async (req, res, next) => {
   try {

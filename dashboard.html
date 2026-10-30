@@ -49,7 +49,22 @@
 
           <section class="dashboard-panel" id="agendamentos" data-panel="agendamentos" aria-labelledby="appointments-title">
             <div class="page-heading"><p class="section-eyebrow">SUA ROTINA LAVEMAIS</p><h1 id="appointments-title">Agendamentos</h1><p>Inicie uma consulta com a equipe e acompanhe os registros disponíveis para sua conta.</p></div>
-            <div class="empty-state"><span class="empty-symbol" aria-hidden="true">◷</span><div><h2>Não há agendamentos para exibir</h2><p>Os agendamentos ainda não são registrados nesta plataforma. O contato pelo WhatsApp inicia uma conversa, mas não confirma uma reserva.</p><a class="button-primary" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">Consultar atendimento <span aria-hidden="true">↗</span></a><p class="pending-inline" data-whatsapp-pending>O WhatsApp comercial ainda não está configurado.</p></div></div>
+            <p>Registre sua preferência de atendimento. A solicitação fica pendente: não há reserva de máquina, confirmação automática ou aviso à equipe. Confirme o atendimento diretamente com a unidade.</p>
+            <form class="profile-form" id="appointment-form">
+              <div class="profile-field"><label for="appointment-service">Atendimento desejado</label><input id="appointment-service" name="service" required minlength="3" maxlength="120" /></div>
+              <div class="profile-field"><label for="appointment-date">Data de preferência</label><input id="appointment-date" name="preferredDate" type="date" required /></div>
+              <div class="profile-field"><label for="appointment-notes">Observações (opcional)</label><input id="appointment-notes" name="notes" maxlength="1000" /></div>
+              <p id="appointment-feedback" class="profile-feedback" role="status" aria-live="polite"></p>
+              <button class="button-primary" type="submit">Enviar solicitação</button>
+              <button class="text-link" type="button" id="appointment-reset" hidden>Cancelar edição</button>
+            </form>
+            <div class="appointment-toolbar profile-field">
+              <label for="appointment-status">Filtrar solicitações</label>
+              <select id="appointment-status"><option value="">Todas</option><option value="pending">Pendentes</option><option value="cancelled">Canceladas</option></select>
+              <button class="text-link" type="button" id="appointment-refresh">Atualizar histórico</button>
+            </div>
+            <div id="appointment-list" aria-live="polite" aria-busy="true">Carregando solicitações…</div>
+            <div class="appointment-toolbar"><button class="button-primary" id="appointment-prev" type="button" disabled>Anterior</button><span id="appointment-page">Página 1</span><button class="button-primary" id="appointment-next" type="button" disabled>Próxima</button></div>
           </section>
 
           <section class="dashboard-panel" id="servicos" data-panel="servicos" aria-labelledby="services-title">

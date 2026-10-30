@@ -6,10 +6,12 @@ export async function databaseFixture() {
   // gen_random_uuid is built into PostgreSQL; PGlite does not bundle pgcrypto.
   const schema = (await readFile(new URL('../supabase/schema.sql', import.meta.url), 'utf8')).replace('create extension if not exists pgcrypto;', '');
   await db.exec(schema);
-  return { db, schema };
+  const migration = await readFile(new URL('../supabase/migrations/20261030_appointment_requests.sql', import.meta.url), 'utf8');
+  await db.exec(migration);
+  return { db, schema, migration };
 }
 export function postgrestFetch(db) {
-  const tables = new Set(['users', 'rate_limits', 'session_revocations']);
+  const tables = new Set(['users', 'rate_limits', 'session_revocations', 'appointment_requests']);
   const safeName = name => { if (!/^[a-z_]+$/.test(name)) throw new Error('Unsafe fixture identifier'); return name; };
   return async (input, init = {}) => {
     const url = new URL(input);
@@ -27,7 +29,7 @@ export function postgrestFetch(db) {
         if (!tables.has(table)) throw new Error('Unknown fixture table');
         const values = [], conditions = [];
         for (const [key, value] of url.searchParams) {
-          if (['select', 'limit', 'on_conflict'].includes(key)) continue;
+          if (['select', 'limit', 'offset', 'order', 'on_conflict'].includes(key)) continue;
           const [op, ...rest] = value.split('.');
           if (!['eq', 'gt'].includes(op)) throw new Error('Unknown fixture operator');
           values.push(rest.join('.')); conditions.push(`${safeName(key)} ${op === 'eq' ? '=' : '>'} $${values.length}`);
@@ -47,6 +49,18 @@ export function postgrestFetch(db) {
           const assignments = Object.entries(body).map(([k,v]) => { values.push(v); return `${safeName(k)}=$${values.length}`; });
           sql = `update public.${table} set ${assignments.join(',')}${where} returning ${cols}`;
         } else throw new Error('Unknown fixture method');
+        if (!init.method || init.method === 'GET') {
+          if (url.searchParams.has('order')) sql += ' order by ' + url.searchParams.get('order').split(',').map(item => {
+            const [name, direction] = item.split('.');
+            if (!['asc', 'desc'].includes(direction)) throw new Error('Unsafe fixture order');
+            return `${safeName(name)} ${direction}`;
+          }).join(',');
+          for (const key of ['limit', 'offset']) if (url.searchParams.has(key)) {
+            const n = Number(url.searchParams.get(key));
+            if (!Number.isInteger(n) || n < 0) throw new Error('Unsafe fixture pagination');
+            sql += ` ${key} ${n}`;
+          }
+        }
         data = (await db.query(sql, values)).rows;
         if (headers.get('accept')?.includes('application/vnd.pgrst.object+json')) data = data[0] || null;
       }

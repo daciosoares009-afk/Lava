@@ -29,7 +29,7 @@ test('Vercel cold start: página pública sem banco, inicialização concorrente
   assert.equal(calls,0,'public routes must not initialize the database');
   const responses=await Promise.all([nativeFetch(base+'/api/health'),nativeFetch(base+'/api/health')]);
   assert.deepEqual(responses.map(r=>r.status),[200,200]);
-  assert.equal(calls,3,'one shared initialization and two live health checks');
+  assert.equal(calls,4,'one shared initialization, migration check and two live health checks');
   const credentials={email:'cold@example.test',password:'ColdStart123'};
   const post=(path,body)=>nativeFetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
   assert.equal((await post('/api/auth/register',{...credentials,fullName:'Cliente Cold',phone:'11999999999',birthDate:'1990-01-01'})).status,201);

@@ -7,3 +7,4 @@
 
 html,body{width:100%;min-height:100%}.dashboard-body,.dashboard-layout,.dashboard-main{width:100%;min-height:100vh;min-height:100svh}.dashboard-content{flex:1}
 .dashboard-content{width:100%;max-width:none;margin-inline:0}
+.appointment-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin:24px 0}.appointment-toolbar select{padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;color:var(--deep);background:var(--white)}.appointment-record{padding:20px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.appointment-record h2{font:700 17px Manrope,sans-serif;color:var(--deep)}.appointment-record p{font-size:13px;line-height:1.65}.appointment-record button{margin:8px 16px 0 0}.appointment-toolbar button:disabled,.button-primary:disabled{opacity:.55;cursor:wait}.text-link:is(button){background:none;border:0;cursor:pointer}#appointment-reset[hidden]{display:none}

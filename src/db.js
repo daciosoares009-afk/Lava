@@ -12,6 +12,8 @@ export async function connectDatabase(configOrUri) {
     await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 5000, maxPoolSize: 5 });
     const { MongooseUser } = await import('./models/User.js');
     await MongooseUser.init();
+    const { Appointment } = await import('./appointments.js');
+    await Appointment.init();
     const { initializeSecurityIndexes } = await import('./securityStore.js');
     await initializeSecurityIndexes();
     activeBackend = 'mongo';
@@ -24,6 +26,8 @@ export async function connectDatabase(configOrUri) {
   });
   const { data, error } = await client.rpc('lavemais_health');
   if (error || data !== 1) throw Object.assign(new Error('Esquema Supabase indisponível ou desatualizado.'), { code: error?.code || 'DATABASE_UNAVAILABLE' });
+  const { error: appointmentsError } = await client.from('appointment_requests').select('id,user_id,revision').limit(0);
+  if (appointmentsError) throw Object.assign(new Error('Migração de solicitações de atendimento ausente ou sem permissão.'), { code: appointmentsError.code || 'DATABASE_UNAVAILABLE' });
   supabaseClient = client;
   activeBackend = 'supabase';
   return client;

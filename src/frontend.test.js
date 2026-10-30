@@ -51,3 +51,35 @@ test('home executa os renderizadores sem inventar contatos vazios e mantém ânc
   assert.ok([...w.document.querySelectorAll('[data-whatsapp-link]')].every(link=>link.hidden));
   assert.equal(w.document.querySelectorAll('[data-recharge-rows] .price-row').length,siteContent.recharges.length);
 });
+
+test('solicitações no dashboard carregam, salvam, editam, cancelam e exibem falhas sem inserir HTML',async t=>{
+  const dom=await screen('dashboard.html','/conta/agendamentos','dashboard.js');t.after(()=>dom.window.close());
+  const w=dom.window; const writes=[];let rows=[],fail=false;
+  w.confirm=()=>true;
+  w.fetch=async(url,init={})=>{
+    if(url==='/api/client/profile') return {ok:true,status:200,json:async()=>({user:{fullName:'Cliente Teste',createdAt:'2020-01-01'}})};
+    if(fail)return{ok:false,status:503,json:async()=>({error:{message:'Serviço indisponível'}})};
+    if(init.method!=='GET') {
+      const body=JSON.parse(init.body);writes.push({url,body,method:init.method});
+      rows=[{id:'123',...body,status:url.endsWith('/cancel')?'cancelled':'pending',revision:writes.length-1,preferredDate:body.preferredDate||rows[0]?.preferredDate,service:body.service||rows[0]?.service}];
+      return{ok:true,status:200,json:async()=>({appointment:rows[0]})};
+    }
+    return{ok:true,status:200,json:async()=>({appointments:rows,hasMore:false})};
+  };
+  await w.run();await settle();
+  assert.match(w.document.querySelector('#appointment-list').textContent,/Nenhuma solicitação/);
+  const form=w.document.querySelector('#appointment-form');
+  const send=async()=>{form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();await settle();};
+  form.elements.service.value='<img src=x onerror=alert(1)>';
+  form.elements.preferredDate.value=new Date(Date.now()+86400000).toISOString().slice(0,10);
+  await send();
+  assert.equal(writes[0].method,'POST');assert.equal(w.document.querySelector('#appointment-list img'),null);
+  w.document.querySelector('#appointment-list button').click();
+  form.elements.notes.value='Atualização';await send();
+  assert.equal(writes[1].method,'PATCH');assert.equal(writes[1].body.revision,0);
+  w.document.querySelectorAll('#appointment-list button')[1].click();await settle();await settle();
+  assert.match(writes[2].url,/\/cancel$/);assert.equal(writes[2].body.revision,1);
+  assert.match(w.document.querySelector('#appointment-list').textContent,/Cancelada/);
+  fail=true;w.document.querySelector('#appointment-refresh').click();await settle();
+  assert.match(w.document.querySelector('#appointment-list').textContent,/Serviço indisponível/);
+});
