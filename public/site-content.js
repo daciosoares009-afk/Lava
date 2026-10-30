@@ -3,7 +3,7 @@ export const siteContent = {
   whatsappNumber: '', // Número internacional com DDI e DDD, somente dígitos (ex.: 55 + DDD + número).
   contact: {
     phone: '',
-    address: '',
+    address: 'Rua Sapucaia, sala 04 — Bairro Portal dos Cerrados, Uruçuí-PI',
     hours: [],
     mapsUrl: '',
   },
