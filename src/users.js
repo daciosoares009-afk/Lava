@@ -19,6 +19,14 @@ async function result(query) {
 }
 const useMongo = () => getDatabaseBackend() === 'mongo';
 export const users = {
+  async findByGoogleSubject(subject) {
+    if(useMongo())return MongooseUser.findOne({googleSubject:subject});
+    return mapRow(await result(getSupabaseClient().from('users').select(profileColumns).eq('google_subject',subject).maybeSingle()));
+  },
+  async linkGoogle(id,subject) {
+    if(useMongo())return Boolean(await MongooseUser.findOneAndUpdate({_id:id,$or:[{googleSubject:null},{googleSubject:subject}]},{$set:{googleSubject:subject}}));
+    return result(getSupabaseClient().rpc('lavemais_link_google',{p_id:id,p_subject:subject}));
+  },
   async create(data) {
     if (useMongo()) return MongooseUser.create(data);
     return mapRow(await result(getSupabaseClient().from('users').insert(record(data)).select(profileColumns).single()));

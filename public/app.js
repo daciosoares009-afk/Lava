@@ -5,6 +5,7 @@ const title = document.querySelector('#form-title');
 const subtitle = document.querySelector('#form-subtitle');
 const kicker = document.querySelector('#form-kicker');
 const logoutButton = document.querySelector('.logout-button');
+const googleStatus = new URLSearchParams(window.location.search).get('google');
 let currentUser = null;
 let mfaChallenge = null;
 const accountDestinations = new Set(['/conta', '/conta/inicio', '/conta/agendamentos', '/conta/servicos', '/conta/planos', '/conta/beneficios', '/conta/perfil', '/conta/sobre']);
@@ -234,3 +235,25 @@ mfaLoginForm.addEventListener('submit', async event => {
   if (result?.user) { mfaChallenge = null; mfaLoginForm.reset(); window.location.assign(postLoginDestination()); }
 });
 document.querySelector('#mfa-back').addEventListener('click', () => { mfaLoginForm.reset(); setMode('login'); });
+
+async function continueGoogle() {
+  const status=googleStatus;
+  if(!status)return;
+  const feedback=document.querySelector('#google-feedback');
+  if(status==='unavailable'){feedback.textContent='O acesso com Google ainda não está disponível. Entre com seu e-mail e senha.';return;}
+  if(status==='failed'){feedback.textContent='Não foi possível concluir o acesso com Google. Tente novamente ou entre com e-mail e senha.';return;}
+  try {
+    const response=await fetch('/api/auth/google/pending',{credentials:'same-origin'});if(!response.ok)throw new Error();
+    const result=await response.json();
+    if(result.mfaRequired){
+      mfaChallenge=result.challenge;forms.login.hidden=true;forms.register.hidden=true;
+      document.querySelector('#mfa-login-form').hidden=false;document.querySelector('#mfa-login-form').elements.code.focus();
+      feedback.textContent='Confirme o segundo fator da sua conta para continuar.';
+    }else if(result.pending){
+      forms.login.elements.email.value=result.email;forms.register.elements.email.value=result.email;
+      if(result.name)forms.register.elements.fullName.value=result.name;
+      feedback.textContent='Google confirmado. Se já possui conta, entre com sua senha para vincular. Caso contrário, escolha Criar conta e complete seu cadastro.';
+    }else feedback.textContent='A confirmação do Google expirou. Tente novamente.';
+  }catch{feedback.textContent='Não foi possível consultar seu acesso. Tente novamente.';}
+}
+continueGoogle();

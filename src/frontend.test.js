@@ -142,3 +142,13 @@ test('login apresenta segundo fator sem redirecionar ou guardar desafio no naveg
   assert.equal(w.localStorage.length,0);assert.equal(w.sessionStorage.length,0);
   w.document.querySelector('#mfa-back').click();assert.equal(login.hidden,false);assert.equal(w.document.querySelector('#mfa-login-form').hidden,true);
 });
+
+test('retorno Google continua preenchimento mesmo após normalização da URL',async t=>{
+  const dom=await screen('index.html','/login?google=continue','app.js');t.after(()=>dom.window.close());const w=dom.window;
+  w.fetch=async url=>({ok:String(url).endsWith('/google/pending'),json:async()=>({pending:true,email:'google@example.test',name:'Cliente Google'})});
+  await w.run();await settle();
+  assert.equal(w.document.querySelector('#google-login').getAttribute('href'),'/api/auth/google');
+  assert.equal(w.document.querySelector('#login-form').elements.email.value,'google@example.test');
+  assert.equal(w.document.querySelector('#register-form').elements.fullName.value,'Cliente Google');
+  assert.match(w.document.querySelector('#google-feedback').textContent,/Google confirmado/);
+});

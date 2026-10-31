@@ -57,5 +57,8 @@ export function readConfig(env = process.env) {
   const requireStaffMfa = env.REQUIRE_STAFF_MFA === 'true';
   if (env.REQUIRE_STAFF_MFA && !['true','false'].includes(env.REQUIRE_STAFF_MFA)) invalid('REQUIRE_STAFF_MFA deve ser true ou false.');
   if (requireStaffMfa && !mfaEncryptionKey) invalid('MFA_ENCRYPTION_KEY é obrigatória quando REQUIRE_STAFF_MFA=true.');
-  return { requireStaffMfa, mfaEncryptionKey, port, backend, jwtSecret, mongoUri, supabaseUrl, supabaseServiceRoleKey, nodeEnv, smtp, trustProxy, vercelDeployment: deployed, staffUserIds, staffNotificationEmail, appBaseUrl };
+  const googleClientId = env.GOOGLE_CLIENT_ID?.trim() || '';
+  const googleClientSecret = env.GOOGLE_CLIENT_SECRET || '';
+  if ((googleClientId || googleClientSecret) && !(googleClientId && googleClientSecret && appBaseUrl)) invalid('Login Google exige GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e APP_BASE_URL.');
+  return { googleClientId, googleClientSecret, requireStaffMfa, mfaEncryptionKey, port, backend, jwtSecret, mongoUri, supabaseUrl, supabaseServiceRoleKey, nodeEnv, smtp, trustProxy, vercelDeployment: deployed, staffUserIds, staffNotificationEmail, appBaseUrl };
 }

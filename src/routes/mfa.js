@@ -2,6 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { randomUUID, createHmac } from 'node:crypto';
 import { requireAuth, issueSession } from '../authSession.js';
+import { pendingGoogle, clearGooglePending } from '../googleAuth.js';
 import { users } from '../users.js';
 import { passwordMatches } from '../passwordAuth.js';
 import { mfaStore } from '../mfaStore.js';
@@ -35,6 +36,11 @@ router.post('/login', async (req,res) => {
   if (!await accountLimit(req,res,claims.sub)) return;
   const user = await users.findById(claims.sub), credential = await mfaStore.get(claims.sub);
   if (!user || (user.sessionVersion || 0) !== claims.sv || credential?.version !== claims.version || !await checkCode(claims.sub,credential,req.body?.code,config)) return rejected(res);
+  const identity = pendingGoogle(req);
+  if(identity?.kind==='identity' && identity.email===user.email) {
+    if(!await users.linkGoogle(user.id,identity.sub)) return res.status(409).json({error:{code:'GOOGLE_LINK_CONFLICT',message:'Esta conta já possui outro acesso Google.'}});
+  }
+  clearGooglePending(res,config);
   issueSession(res,user,config.jwtSecret,config.nodeEnv,credential.version);
   return res.json({user:{id:user.id,fullName:user.fullName,email:user.email}});
 });

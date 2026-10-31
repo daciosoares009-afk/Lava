@@ -132,9 +132,9 @@ function renderServices() {
 
 function renderLegalLinks() {
   const container = document.querySelector('[data-legal-links]');
-  [['termsUrl', 'Termos de uso'], ['privacyUrl', 'Política de privacidade'], ['cookiesUrl', 'Política de cookies']].forEach(([key, label]) => {
+  [['termsUrl', 'Termos de uso'], ['privacyUrl', 'LGPD e Privacidade'], ['cookiesUrl', 'Política de cookies']].forEach(([key, label]) => {
     const url = siteContent.legal[key]?.trim();
-    if (!url) return;
+    if (!url || [...container.querySelectorAll('a')].some(link => link.getAttribute('href') === url)) return;
     const link = document.createElement('a');
     link.href = url;
     link.textContent = label;

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { getDatabaseBackend } from '../db.js';
 
 const userSchema = new mongoose.Schema({
+  googleSubject: { type: String, select: false },
   fullName: { type: String, required: true, trim: true, minlength: 3, maxlength: 120 },
   email: { type: String, required: true, trim: true, lowercase: true, maxlength: 254, unique: true },
   phone: { type: String, required: true, trim: true, maxlength: 24 },
@@ -15,6 +16,8 @@ const userSchema = new mongoose.Schema({
   timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
   versionKey: false,
 });
+
+userSchema.index({ googleSubject: 1 }, { unique: true, partialFilterExpression: { googleSubject: { $type: 'string' } } });
 
 export const MongooseUser = mongoose.models.User || mongoose.model('User', userSchema);
 // Compatibility for Mongo integration tooling; application code uses users.js.

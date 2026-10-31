@@ -11,6 +11,7 @@ export async function databaseFixture() {
   const staffMigration = await readFile(new URL('../supabase/migrations/20261030_staff_workflow.sql', import.meta.url), 'utf8');
   await db.exec(staffMigration);
   await db.exec(await readFile(new URL('../supabase/migrations/20261031_mfa.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../supabase/migrations/20261031_google_login.sql', import.meta.url), 'utf8'));
   return { db, schema, migration };
 }
 export function postgrestFetch(db) {

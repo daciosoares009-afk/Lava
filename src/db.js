@@ -34,6 +34,10 @@ export async function connectDatabase(configOrUri) {
   }
   const { error: mfaError } = await client.from('mfa_credentials').select('user_id').limit(0);
   if (mfaError) throw Object.assign(new Error('Migração de MFA ausente ou sem permissão.'), { code: mfaError.code || 'DATABASE_UNAVAILABLE' });
+  if (config.googleClientId) {
+    const { error } = await client.from('users').select('google_subject').limit(0);
+    if (error) throw new Error('Migração de login Google ausente.');
+  }
   supabaseClient = client;
   activeBackend = 'supabase';
   return client;

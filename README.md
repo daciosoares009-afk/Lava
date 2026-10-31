@@ -84,3 +84,5 @@ A logo original é `public/logo-lavemais.png`. A imagem ilustrativa `public/lave
 ## Reforço de segurança e privacidade
 
 Consulte `SEGURANCA-OPERACIONAL.md` antes de publicar: esta versão exige a migração `supabase/migrations/20261031_mfa.sql` no Supabase. MFA TOTP é configurado em Minha conta > Perfil quando `MFA_ENCRYPTION_KEY` está presente. `REQUIRE_STAFF_MFA=true` exige ativação para a equipe. Backup isolado e WAF dependem de configuração externa. Políticas: `/privacidade` e `/cookies`; completar os dados da empresa e as definições operacionais antes de afirmar conformidade LGPD.
+
+Login Google: consultar `GOOGLE-LOGIN.md`. Requer migração `20261031_google_login.sql` quando habilitado, credenciais OAuth e APP_BASE_URL; não há ativação automática na conta Google Cloud.

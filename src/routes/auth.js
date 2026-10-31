@@ -14,7 +14,10 @@ import { passwordResetEmail } from '../emails/templates.js';
 
 import { mfaStore } from '../mfaStore.js';
 import mfaRouter from './mfa.js';
+import googleRouter from './google.js';
+import { pendingGoogle, clearGooglePending } from '../googleAuth.js';
 const router = Router();
+router.use('/google', googleRouter);
 router.use('/mfa', mfaRouter);
 const authLimit = persistentLimit('auth-ip', 15 * 60_000, 10);
 const passwordResetRequestLimit = persistentLimit('reset-request-ip', 60 * 60_000, 5);
@@ -46,6 +49,11 @@ router.post('/register', ensureDatabase, authLimit, async (req, res, next) => {
       birthDate: value.birthDate,
       passwordHash,
     });
+    const identity = pendingGoogle(req);
+    if(identity?.kind==='identity' && identity.email===value.email) {
+      if(!await users.linkGoogle(user.id,identity.sub))throw new Error('Google linking failed');
+      clearGooglePending(res,req.app.locals.config);
+    }
     return res.status(201).json({ user: publicUser(user) });
   } catch (error) {
     if ((error?.code === 11000 && error?.keyPattern?.email) || error?.code === '23505') {
@@ -133,6 +141,11 @@ router.post('/login', ensureDatabase, authLimit, async (req, res, next) => {
     if (credential?.enabled) {
       const challenge = jwt.sign({ sub: String(user.id), sv: user.sessionVersion || 0, version: credential.version }, req.app.locals.config.jwtSecret, { jwtid: randomUUID(), issuer: 'lavemais-api', audience: 'lavemais-mfa', expiresIn: '5m' });
       return res.json({ mfaRequired: true, challenge });
+    }
+    const identity = pendingGoogle(req);
+    if(identity?.kind==='identity' && identity.email===value.email) {
+      if(!await users.linkGoogle(user.id,identity.sub))return res.status(409).json({error:{code:'GOOGLE_LINK_CONFLICT',message:'Esta conta já está vinculada a outro acesso Google.'}});
+      clearGooglePending(res,req.app.locals.config);
     }
     issueSession(res, user, req.app.locals.config.jwtSecret, req.app.locals.config.nodeEnv);
     return res.json({ user: publicUser(user) });
