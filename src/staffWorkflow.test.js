@@ -44,6 +44,7 @@ test('avisos persistem falha e reenvio; claim impede envio concorrente e SMTP n�
   let fail=true,calls=0;
   t.mock.method(nodemailer,'createTransport',()=>({sendMail:async mail=>{
     calls++;assert.equal(mail.to,config.staffNotificationEmail);assert.match(mail.text,/https:\/\/lavemais.example\/equipe/);
+    assert.match(mail.html,/https:\/\/lavemais.example\/equipe/);assert.match(mail.html,/logo-lavemais-email.png/);
     assert.doesNotMatch(mail.text,/Privado|private@example|Observação/);
     if(fail)throw new Error('fixture delivery failure');
   }}));

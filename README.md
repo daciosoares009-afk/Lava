@@ -1,5 +1,7 @@
 # LaveMais — site público e área do cliente
 
+**E-mails:** `npm run emails:preview` abre prévias locais em `http://127.0.0.1:3100`, sem envio. Consulte `EMAILS.md` para modelos, escopo de integração, validação e publicação da logo de e-mail.
+
 **Entrega de 30/10/2026:** consulte `PRODUCAO.md` e `AUDITORIA-PRODUCAO.md`. Antes de executar esta versão com Supabase, aplique `supabase/migrations/20261030_appointment_requests.sql` após a baseline `supabase/schema.sql`. A nova API `/api/client/appointments` registra solicitações pendentes (criação, listagem, edição e cancelamento com histórico); não confirma reservas e não notifica a equipe. A migração não foi executada no banco remoto.
 
 Aplicação Node.js/Express com autenticação própria (bcrypt + JWT HttpOnly). O banco é escolhido por `DATABASE_BACKEND=mongo|supabase`; Supabase Auth não é usado. Não há fallback automático entre bancos.

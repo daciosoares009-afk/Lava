@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { getSupabaseClient } from './db.js';
+import { staffRequestEmail } from './emails/templates.js';
 export async function notifyStaff(id, config) {
   if (!config.staffNotificationEmail) return { state: 'disabled' };
   const db = getSupabaseClient(), lease = randomUUID();
@@ -12,8 +13,7 @@ export async function notifyStaff(id, config) {
     const smtp = config.smtp;
     const transport = nodemailer.createTransport({ host:smtp.host,port:smtp.port,secure:smtp.port===465,requireTLS:smtp.port!==465,
       auth:{user:smtp.user,pass:smtp.password},connectionTimeout:4000,greetingTimeout:4000,socketTimeout:8000 });
-    await transport.sendMail({ from:smtp.from,to:config.staffNotificationEmail,subject:'Nova solicitação | LaveMais',
-      text:`Há uma nova solicitação de atendimento. Acesse o painel autenticado: ${config.appBaseUrl}/equipe\n\nPagamento exclusivamente na unidade. Consulte o painel para confirmar a situação atual.` });
+    await transport.sendMail({ from:smtp.from,to:config.staffNotificationEmail,...staffRequestEmail(config) });
     sent = true;
   } catch { console.error('Staff notification delivery failed'); }
   const finished = await db.rpc('lavemais_finish_notification', {p_id:id,p_lease:lease,p_sent:sent});

@@ -9,6 +9,7 @@ import { users } from '../users.js';
 import { validateLogin, validatePasswordResetConfirmation, validatePasswordResetRequest, validateRegistration } from '../authValidation.js';
 import { databaseReady } from '../db.js';
 import { clearSessionCookies, cookieName, getSessionUser } from '../authSession.js';
+import { passwordResetEmail } from '../emails/templates.js';
 
 const router = Router();
 const authLimit = persistentLimit('auth-ip', 15 * 60_000, 10);
@@ -90,11 +91,13 @@ router.post('/password-reset/request', ensureDatabase, passwordResetRequestLimit
         socketTimeout: 8_000,
       });
       try {
+        // Nome é apenas apresentação; uma falha de leitura não bloqueia o envio.
+        let name;
+        try { name = (await users.findById(user.id))?.fullName; } catch { /* saudação neutra */ }
         await transporter.sendMail({
           from: config.smtp.from,
           to: value.email,
-          subject: 'Código para redefinir sua senha | LaveMais',
-          text: `Seu código para redefinir a senha é: ${code}\n\nEle expira em 10 minutos. Se você não solicitou a redefinição, ignore este e-mail.`,
+          ...passwordResetEmail({name,code},config),
         });
       } catch (error) {
         try { await users.cancelReset(value.email, codeHash); }

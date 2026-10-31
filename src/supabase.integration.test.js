@@ -93,7 +93,12 @@ test('API Supabase: cadastro, perfil, reset SMTP, revogação, privacidade e lim
   assert.equal(history.length,1);assert.equal(history[0].actor,owner.id);
   assert.equal((await nativeFetch(base+'/api/client/appointments',{method:'POST',headers:{'Content-Type':'application/json','Sec-Fetch-Site':'cross-site',Cookie:cookie},body:JSON.stringify(request)})).status,403);
   let code, fail = true;
-  t.mock.method(nodemailer, 'createTransport', () => ({ sendMail: async message => { if (fail) throw new Error('SMTP fixture failure'); code=message.text.match(/\d{6}/)[0]; } }));
+  t.mock.method(nodemailer, 'createTransport', () => ({ sendMail: async message => {
+    if (fail) throw new Error('SMTP fixture failure');
+    code=message.text.match(/\d{6}/)[0];
+    assert.match(message.html,/Nome Atualizado/);assert.ok(message.html.includes(code));
+    assert.match(message.html,/recuperar-senha/);
+  } }));
   assert.equal((await call('/api/auth/password-reset/request','POST',{email:registration.email})).status,503);
   assert.equal((await db.query('select password_reset_code_hash from public.users where email=$1',[registration.email])).rows[0].password_reset_code_hash,null);
   fail=false;

@@ -2,6 +2,23 @@ const requestForm = document.querySelector('#request-form');
 const confirmForm = document.querySelector('#confirm-form');
 const title = document.querySelector('#reset-title');
 const subtitle = document.querySelector('#reset-subtitle');
+const codeInput = confirmForm.elements.code;
+// Não cortar caracteres antes da validação: espaços de cópia/autofill não
+// podem consumir uma posição e impedir o sexto dígito.
+function normalizeResetCode(value) {
+  return value.replace(/[\s\u200B-\u200D\uFEFF\-\u2010-\u2015]/g, '');
+}
+codeInput.addEventListener('input', () => {
+  const original = codeInput.value;
+  const normalized = normalizeResetCode(original);
+  if (normalized === original) return;
+  const cursor = codeInput.selectionStart;
+  codeInput.value = normalized;
+  if (cursor !== null) {
+    const next = normalizeResetCode(original.slice(0, cursor)).length;
+    codeInput.setSelectionRange(next, next);
+  }
+});
 
 document.querySelector('#year').textContent = new Date().getFullYear();
 
@@ -30,6 +47,7 @@ function validateForm(form, confirmation = false) {
   clearFeedback(form);
   let firstInvalid = null;
   for (const input of form.querySelectorAll('input[required]')) {
+    if (input.name === 'code') input.value = normalizeResetCode(input.value);
     let message = '';
     const value = ['password', 'confirmPassword'].includes(input.name) ? input.value : input.value.trim();
     if (!value) message = 'Este campo é obrigatório.';
@@ -109,7 +127,7 @@ confirmForm.addEventListener('submit', async (event) => {
   if (!validateForm(confirmForm, true)) return;
   const result = await submitForm(confirmForm, 'confirm', {
     email: confirmForm.elements.email.value.trim(),
-    code: confirmForm.elements.code.value.trim(),
+    code: normalizeResetCode(confirmForm.elements.code.value),
     password: confirmForm.elements.password.value,
   });
   if (!result) return;
