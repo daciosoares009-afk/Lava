@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>LaveMais</title>
+  <rect width="64" height="64" rx="14" fill="#fff"/>
+  <rect x="12" y="7" width="40" height="50" rx="7" fill="#fff" stroke="#102b70" stroke-width="4"/>
+  <path d="M14 21h36" stroke="#102b70" stroke-width="3"/>
+  <rect x="19" y="12" width="13" height="5" rx="2.5" fill="#102b70"/>
+  <circle cx="41" cy="14.5" r="3" fill="#c8d927"/>
+  <circle cx="32" cy="38" r="13" fill="#fff" stroke="#102b70" stroke-width="4"/>
+  <path d="M21 36c4 9 8-5 13 1s7-1 9-2v4a11 11 0 0 1-22 0z" fill="#08aebe"/>
+  <path d="M22 40c4 5 7-3 12 1s7 0 8-1a10 10 0 0 1-20 0" fill="#102b70"/>
+</svg>

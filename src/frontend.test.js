@@ -152,3 +152,14 @@ test('retorno Google continua preenchimento mesmo após normalização da URL',a
   assert.equal(w.document.querySelector('#register-form').elements.fullName.value,'Cliente Google');
   assert.match(w.document.querySelector('#google-feedback').textContent,/Google confirmado/);
 });
+
+test('MFA retoma confirmação pendente após recarregar e exibe erro do servidor',async t=>{
+  const dom=await screen('dashboard.html','/conta/perfil','mfa.js');t.after(()=>dom.window.close());const w=dom.window,sent=[];
+  w.fetch=async(url,init)=>{if(init?.method==='POST'){sent.push(url);return{ok:false,json:async()=>({error:{message:'Código inválido ou expirado.'}})};}return{ok:true,json:async()=>({enabled:false,available:true,pending:true})};};
+  await w.run();await settle();
+  const form=w.document.querySelector('#mfa-settings-form');
+  assert.equal(w.document.querySelector('#mfa-settings').hidden,false);assert.equal(w.document.querySelector('#mfa-action').textContent,'Confirmar ativação');
+  form.elements.password.value='FixturePassword123';form.elements.code.value='123456';
+  form.dispatchEvent(new w.Event('submit',{cancelable:true}));await settle();
+  assert.deepEqual(sent,['/api/auth/mfa/confirm']);assert.match(w.document.querySelector('#mfa-state').textContent,/Código inválido/);
+});

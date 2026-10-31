@@ -47,7 +47,7 @@ router.post('/login', async (req,res) => {
 router.use(requireAuth);
 router.get('/status', async (req,res) => {
   const credential = await mfaStore.get(String(req.authenticatedUser.id));
-  return res.json({enabled:Boolean(credential?.enabled),available:Boolean(req.app.locals.config.mfaEncryptionKey)});
+  return res.json({enabled:Boolean(credential?.enabled),available:Boolean(req.app.locals.config.mfaEncryptionKey),pending:Boolean(credential && !credential.enabled && credential.secret && credential.expiresAt > new Date())});
 });
 router.use(async (req,res,next) => {
   if (!await accountLimit(req,res,String(req.authenticatedUser.id))) return;

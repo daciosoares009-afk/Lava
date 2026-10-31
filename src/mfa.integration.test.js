@@ -25,6 +25,8 @@ test('MFA: ativação, isolamento, desafio sem sessão, replay, recovery e desat
   assert.equal((await call('staff/appointments',undefined,oldCookie)).status,403);
   const setup=await call('auth/mfa/setup',{password},oldCookie);assert.equal(setup.status,200);const {secret}=await setup.json();
   assert.doesNotMatch((await db.query('select secret from public.mfa_credentials where user_id=$1',[id])).rows[0].secret,new RegExp(secret));
+  const pendingStatus=await (await call('auth/mfa/status',undefined,oldCookie)).json();
+  assert.equal(pendingStatus.pending,true);assert.equal(pendingStatus.enabled,false);
   const code=totp(secret,Math.floor(Date.now()/30000));
   const confirmation=await call('auth/mfa/confirm',{password,code},oldCookie);assert.equal(confirmation.status,200);
   const codes=(await confirmation.json()).recoveryCodes,enabledCookie=cookieOf(confirmation);assert.equal(codes.length,8);

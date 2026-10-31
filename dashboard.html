@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#102b70" />
@@ -107,6 +108,7 @@
                 <label class="profile-field">Código do autenticador ou recuperação<input name="code" autocomplete="one-time-code" maxlength="24" /></label>
                 <button type="submit" class="button-primary" id="mfa-action">Configurar segundo fator</button>
               </form>
+              <button type="button" id="mfa-restart" hidden>Reiniciar configuração do autenticador</button>
               <div id="mfa-enrollment" hidden><p>Adicione a chave abaixo manualmente ao aplicativo autenticador como TOTP (6 dígitos, 30 segundos). Depois confirme com um código. A configuração expira em dez minutos.</p><code id="mfa-secret"></code></div>
               <div id="mfa-recovery" hidden><p>Guarde estes códigos em local seguro fora desta conta. Cada código só pode ser usado uma vez; eles não serão exibidos novamente. Sem o autenticador e sem esses códigos, o acesso não poderá ser recuperado automaticamente.</p><pre id="mfa-recovery-codes"></pre><button type="button" id="mfa-hide-codes">Já guardei os códigos</button></div>
             </section>
