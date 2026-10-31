@@ -103,7 +103,7 @@
             <section class="overview-block" id="mfa-settings" hidden aria-labelledby="mfa-heading">
               <h2 id="mfa-heading">Segurança da conta</h2>
               <p id="mfa-state" role="status">Consultando segundo fator…</p>
-              <form id="mfa-settings-form" class="profile-form">
+              <form id="mfa-settings-form" class="profile-form" novalidate>
                 <label class="profile-field">Senha atual<input type="password" name="password" autocomplete="current-password" required maxlength="72" /></label>
                 <label class="profile-field">Código do autenticador ou recuperação<input name="code" autocomplete="one-time-code" maxlength="24" /></label>
                 <button type="submit" class="button-primary" id="mfa-action">Configurar segundo fator</button>

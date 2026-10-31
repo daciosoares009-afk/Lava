@@ -2,10 +2,18 @@ const section=document.querySelector('#mfa-settings'), form=document.querySelect
 const state=document.querySelector('#mfa-state'), action=document.querySelector('#mfa-action');
 let enabled=false, pending=false;
 async function call(path,body) {
-  const response=await fetch('/api/auth/mfa/'+path,{credentials:'same-origin',...(body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});
-  const data=await response.json();
-  if(!response.ok)throw new Error(data.error?.message||'Não foi possível atualizar o segundo fator.');
-  return data;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),15000);
+  try {
+    const response=await fetch('/api/auth/mfa/'+path,{signal:controller.signal,credentials:'same-origin',...(body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error?.message||'Não foi possível atualizar o segundo fator. Tente novamente.');
+    return data;
+  }catch(error){
+    if(error.name==='AbortError')throw new Error('A solicitação demorou demais. Confira a conexão e tente novamente.');
+    if(error instanceof TypeError)throw new Error('Falha de conexão. Confira sua internet e tente novamente.');
+    throw error;
+  }finally{clearTimeout(timer);}
 }
 async function load() {
   try {
@@ -18,8 +26,16 @@ async function load() {
     document.querySelector('#mfa-restart').hidden=!pending;
   } catch(error) {section.hidden=false;state.textContent='Não foi possível consultar o segundo fator. '+error.message;form.hidden=true;}
 }
+if(form)form.noValidate=true;
 form?.addEventListener('submit',async event=>{
-  event.preventDefault(); action.disabled=true;
+  event.preventDefault();
+  if(action.disabled)return;
+  const password=form.elements.password,code=form.elements.code;
+  if(!password.value){state.textContent='Informe sua senha atual da LaveMais para continuar.';password.focus();return;}
+  if((pending||enabled)&&!code.value.trim()){state.textContent='Informe o código do aplicativo autenticador para confirmar. Na desativação, também é aceito um código de recuperação.';code.focus();return;}
+  if(pending&&!/^\d{6}$/.test(code.value.trim())){state.textContent='Digite os seis números exibidos no aplicativo autenticador.';code.focus();return;}
+  state.textContent=pending?'Confirmando ativação…':enabled?'Desativando segundo fator…':'Criando configuração do autenticador…';
+  action.disabled=true;
   try {
     const body={password:form.elements.password.value,code:form.elements.code.value.trim()};
     const data=await call(enabled?'disable':pending?'confirm':'setup',body);

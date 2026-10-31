@@ -163,3 +163,16 @@ test('MFA retoma confirmação pendente após recarregar e exibe erro do servido
   form.dispatchEvent(new w.Event('submit',{cancelable:true}));await settle();
   assert.deepEqual(sent,['/api/auth/mfa/confirm']);assert.match(w.document.querySelector('#mfa-state').textContent,/Código inválido/);
 });
+
+test('clique MFA informa campos faltantes e progresso antes da resposta',async t=>{
+  const dom=await screen('dashboard.html','/conta/perfil','mfa.js');t.after(()=>dom.window.close());const w=dom.window;
+  let respond,posts=0;
+  w.fetch=async(_url,init)=>{if(init?.method==='POST'){posts++;return new Promise(resolve=>respond=resolve);}return{ok:true,json:async()=>({enabled:false,available:true,pending:true})};};
+  await w.run();await settle();
+  const form=w.document.querySelector('#mfa-settings-form'),button=w.document.querySelector('#mfa-action'),status=w.document.querySelector('#mfa-state');
+  button.click();assert.match(status.textContent,/Informe sua senha/);assert.equal(posts,0);
+  form.elements.password.value='FixturePassword123';button.click();assert.match(status.textContent,/Informe o código/);assert.equal(posts,0);
+  form.elements.code.value='123456';button.click();assert.match(status.textContent,/Confirmando ativação/);assert.equal(button.disabled,true);assert.equal(posts,1);
+  respond({ok:true,json:async()=>({enabled:true,recoveryCodes:['fixture-only']})});await settle();
+  assert.match(status.textContent,/Segundo fator ativado/);assert.equal(w.document.querySelector('#mfa-recovery').hidden,false);assert.equal(button.disabled,false);
+});
