@@ -41,5 +41,16 @@ export function readConfig(env = process.env) {
     const family = isIP(ip);
     return !family || extra !== undefined || (prefix !== undefined && (!/^\d+$/.test(prefix) || Number(prefix) > (family === 4 ? 32 : 128)));
   })) invalid('TRUST_PROXY deve listar IPs/CIDRs confiáveis; true e número de saltos não são permitidos.');
-  return { port, backend, jwtSecret, mongoUri, supabaseUrl, supabaseServiceRoleKey, nodeEnv, smtp, trustProxy, vercelDeployment: deployed };
+  const staffUserIds = (env.STAFF_USER_IDS || '').split(',').map(v => v.trim()).filter(Boolean);
+  if (staffUserIds.some(id => !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id))) invalid('STAFF_USER_IDS deve conter UUIDs das contas autorizadas.');
+  const staffNotificationEmail = (env.STAFF_NOTIFICATION_EMAIL || '').trim();
+  if (staffNotificationEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(staffNotificationEmail)) invalid('STAFF_NOTIFICATION_EMAIL inválido.');
+  let appBaseUrl = '';
+  if (env.APP_BASE_URL) {
+    try { const url = new URL(env.APP_BASE_URL); if (url.username || url.password || url.search || url.hash || url.pathname !== '/' || !(url.protocol === 'https:' || (nodeEnv !== 'production' && url.protocol === 'http:' && ['localhost','127.0.0.1'].includes(url.hostname)))) throw new Error(); appBaseUrl = url.origin; }
+    catch { invalid('APP_BASE_URL precisa ser uma origem HTTPS (ou localhost em desenvolvimento).'); }
+  }
+  if (staffUserIds.length && backend !== 'supabase') invalid('O painel da equipe exige Supabase nesta versão.');
+  if (staffNotificationEmail && (!smtp.configured || !appBaseUrl || backend !== 'supabase')) invalid('Avisos da equipe exigem Supabase, SMTP e APP_BASE_URL.');
+  return { port, backend, jwtSecret, mongoUri, supabaseUrl, supabaseServiceRoleKey, nodeEnv, smtp, trustProxy, vercelDeployment: deployed, staffUserIds, staffNotificationEmail, appBaseUrl };
 }

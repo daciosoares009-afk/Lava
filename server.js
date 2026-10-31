@@ -11,6 +11,8 @@ import { formatSafeError } from './src/safeError.js';
 import authRouter from './src/routes/auth.js';
 import clientRouter from './src/routes/client.js';
 import appointmentsRouter from './src/routes/appointments.js';
+import staffRouter from './src/routes/staff.js';
+import { requireStaff } from './src/staffAccess.js';
 import { getSessionUser } from './src/authSession.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,7 +37,7 @@ app.use(helmet({
 app.use((req, res, next) => {
   req.requestId = randomUUID();
   res.set('X-Request-ID', req.requestId);
-  if (req.path.startsWith('/api') || req.path.startsWith('/conta') || req.path === '/login') res.set('Cache-Control', 'no-store');
+  if (req.path.startsWith('/api') || req.path.startsWith('/conta') || req.path === '/equipe' || req.path === '/login') res.set('Cache-Control', 'no-store');
   next();
 });
 app.use(express.json({ limit: '16kb' }));
@@ -73,6 +75,7 @@ function initializeVercelDatabase(req, res, next) {
   if (!config) app.locals.config = { nodeEnv: 'production' };
   if (req.method === 'POST' && req.path === '/api/auth/logout' && !req.cookies?.lavemais_session) return next();
   const needsDatabase = req.path.startsWith('/conta')
+    || req.path === '/equipe'
     || req.path.startsWith('/api/') || (req.path === '/login' && req.cookies?.lavemais_session);
   if (!needsDatabase) return next();
 
@@ -101,6 +104,8 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/client', clientRouter);
 app.use('/api/client/appointments', appointmentsRouter);
+app.use('/api/staff', staffRouter);
+app.get('/equipe', requireStaff, (_req,res) => res.sendFile(path.join(__dirname,'equipe.html')));
 app.get(['/', '/index.html'], (_req, res) => res.sendFile(path.join(__dirname, 'home.html')));
 app.get('/login', async (req, res, next) => {
   try {

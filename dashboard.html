@@ -49,7 +49,7 @@
 
           <section class="dashboard-panel" id="agendamentos" data-panel="agendamentos" aria-labelledby="appointments-title">
             <div class="page-heading"><p class="section-eyebrow">SUA ROTINA LAVEMAIS</p><h1 id="appointments-title">Agendamentos</h1><p>Inicie uma consulta com a equipe e acompanhe os registros disponíveis para sua conta.</p></div>
-            <p>Registre sua preferência de atendimento. A solicitação fica pendente: não há reserva de máquina, confirmação automática ou aviso à equipe. Confirme o atendimento diretamente com a unidade.</p>
+            <p>Registre sua preferência de atendimento. A solicitação fica pendente até a equipe conferir a disponibilidade. Acompanhe a confirmação por aqui. Pagamento exclusivamente na unidade.</p>
             <form class="profile-form" id="appointment-form">
               <div class="profile-field"><label for="appointment-service">Atendimento desejado</label><input id="appointment-service" name="service" required minlength="3" maxlength="120" /></div>
               <div class="profile-field"><label for="appointment-date">Data de preferência</label><input id="appointment-date" name="preferredDate" type="date" required /></div>
@@ -60,7 +60,7 @@
             </form>
             <div class="appointment-toolbar profile-field">
               <label for="appointment-status">Filtrar solicitações</label>
-              <select id="appointment-status"><option value="">Todas</option><option value="pending">Pendentes</option><option value="cancelled">Canceladas</option></select>
+              <select id="appointment-status"><option value="">Todas</option><option value="pending">Pendentes</option><option value="confirmed">Confirmadas</option><option value="cancelled">Canceladas</option><option value="completed">Concluídas</option></select>
               <button class="text-link" type="button" id="appointment-refresh">Atualizar histórico</button>
             </div>
             <div id="appointment-list" aria-live="polite" aria-busy="true">Carregando solicitações…</div>

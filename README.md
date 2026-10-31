@@ -1,5 +1,7 @@
 # LaveMais — site público e área do cliente
 
+**Entrega de 30/10/2026:** consulte `PRODUCAO.md` e `AUDITORIA-PRODUCAO.md`. Antes de executar esta versão com Supabase, aplique `supabase/migrations/20261030_appointment_requests.sql` após a baseline `supabase/schema.sql`. A nova API `/api/client/appointments` registra solicitações pendentes (criação, listagem, edição e cancelamento com histórico); não confirma reservas e não notifica a equipe. A migração não foi executada no banco remoto.
+
 Aplicação Node.js/Express com autenticação própria (bcrypt + JWT HttpOnly). O banco é escolhido por `DATABASE_BACKEND=mongo|supabase`; Supabase Auth não é usado. Não há fallback automático entre bancos.
 
 ## Requisitos e setup
@@ -39,7 +41,7 @@ Os limites são persistidos no banco, compartilhados entre instâncias: cadastro
 
 Edite **`public/site-content.js`** para preencher somente informações comerciais confirmadas: contato, WhatsApp, endereço, horários, Maps, serviços, preços, história, termos e privacidade. Todos os assets ficam em `public/`, fonte única para Express e Vercel. As páginas HTML ficam na raiz para não expor o dashboard sem a rota protegida.
 
-Recargas e bônus são informações de oferta; não existe compra online, saldo ou lançamento de créditos. Confirme valores antes de publicar. Agendamentos, contratação/pagamento de planos, fidelidade e cupons ainda não têm backend e continuam explicitamente indisponíveis. Contato WhatsApp não confirma reserva. Não há implementação de Supabase Auth nem migração automática de contas ao trocar de backend.
+Recargas e bônus são informações de oferta; não existe compra online, saldo ou lançamento de créditos. Confirme valores antes de publicar. Solicitações de atendimento possuem backend; confirmação de reservas, contratação/pagamento de planos, fidelidade e cupons permanecem pendentes. Contato WhatsApp não confirma reserva. Não há implementação de Supabase Auth nem migração automática de contas ao trocar de backend.
 
 Publique a política de privacidade e os termos reais em URLs verificadas; defina uso, retenção, exclusão e atendimento a pedidos sobre dados pessoais com o responsável pelo negócio. Não foram inventados documentos ou contatos para preencher essas lacunas. Mudança de e-mail exige procedimento de suporte com verificação de identidade; não é liberada pelo formulário.
 

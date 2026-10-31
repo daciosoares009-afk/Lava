@@ -83,3 +83,23 @@ test('solicitações no dashboard carregam, salvam, editam, cancelam e exibem fa
   fail=true;w.document.querySelector('#appointment-refresh').click();await settle();
   assert.match(w.document.querySelector('#appointment-list').textContent,/Serviço indisponível/);
 });
+
+test('painel de equipe exibe dados como texto, salva decisão e trata acesso negado',async t=>{
+  const dom=await screen('equipe.html','/equipe','equipe.js');t.after(()=>dom.window.close());
+  const w=dom.window;w.confirm=()=>true;let denied=false;const writes=[];
+  const item={id:'fixture',service:'<img src=x onerror=alert(1)>',preferred_date:'2026-11-01',notes:'Observação',status:'pending',revision:3,customer:{full_name:'Cliente Teste',phone:'11999999999'},staff_history:[],notification_state:'failed',notification_attempts:1};
+  w.fetch=async(url,init)=>{
+    if(denied)return{ok:false,status:403,json:async()=>({error:{message:'Acesso restrito à equipe.'}})};
+    if(init.method==='PATCH'){writes.push(JSON.parse(init.body));return{ok:true,status:200,json:async()=>({saved:true})};}
+    return{ok:true,status:200,json:async()=>({appointments:[item],hasMore:false})};
+  };
+  await w.run();await settle();
+  assert.equal(w.document.querySelector('#staff-list img'),null);
+  assert.match(w.document.querySelector('#staff-list').textContent,/falhou/);
+  const form=w.document.querySelector('form');form.elements.message.value='Confirmado às 10h, pagamento na unidade.';
+  form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();await settle();
+  assert.equal(writes[0].revision,3);assert.equal(writes[0].status,'confirmed');
+  assert.match(w.document.querySelector('#staff-feedback').textContent,/Decisão salva/);
+  denied=true;w.document.querySelector('#staff-refresh').click();await settle();
+  assert.match(w.document.querySelector('#staff-list').textContent,/Acesso restrito/);
+});

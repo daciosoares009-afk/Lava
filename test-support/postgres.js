@@ -8,6 +8,8 @@ export async function databaseFixture() {
   await db.exec(schema);
   const migration = await readFile(new URL('../supabase/migrations/20261030_appointment_requests.sql', import.meta.url), 'utf8');
   await db.exec(migration);
+  const staffMigration = await readFile(new URL('../supabase/migrations/20261030_staff_workflow.sql', import.meta.url), 'utf8');
+  await db.exec(staffMigration);
   return { db, schema, migration };
 }
 export function postgrestFetch(db) {
@@ -23,7 +25,7 @@ export function postgrestFetch(db) {
         const fn = safeName(url.pathname.split('/').at(-1));
         const args = Object.keys(body).map((key, i) => `${safeName(key)} => $${i + 1}`).join(',');
         const result = await db.query(`select * from public.${fn}(${args})`, Object.values(body));
-        data = ['lavemais_request_reset'].includes(fn) ? result.rows : result.rows[0]?.[fn];
+        data = ['lavemais_request_reset','lavemais_staff_transition'].includes(fn) ? result.rows : result.rows[0]?.[fn];
       } else {
         const table = url.pathname.split('/').at(-1);
         if (!tables.has(table)) throw new Error('Unknown fixture table');

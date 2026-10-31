@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Atendimentos | Equipe LaveMais</title><link rel="stylesheet" href="/dashboard.css"><script type="module" src="/equipe.js"></script></head>
+<body><main class="dashboard-content">
+<header class="page-heading"><a href="/conta" class="text-link">Minha conta</a><h1>Atendimentos</h1><p>Confirme a disponibilidade com a unidade antes de confirmar a data solicitada. Pagamento exclusivamente na unidade.</p></header>
+<div class="appointment-toolbar"><label for="staff-status">Situação</label><select id="staff-status"><option value="pending">Pendentes</option><option value="confirmed">Confirmadas</option><option value="cancelled">Canceladas</option><option value="completed">Concluídas</option></select><button id="staff-refresh" class="button-primary" type="button">Atualizar</button></div>
+<p id="staff-feedback" role="status" aria-live="polite" class="profile-feedback"></p><div id="staff-list" aria-live="polite"></div>
+<div class="appointment-toolbar"><button id="staff-prev" class="button-primary" type="button" disabled>Anterior</button><span id="staff-page">Página 1</span><button id="staff-next" class="button-primary" type="button" disabled>Próxima</button></div>
+</main></body></html>

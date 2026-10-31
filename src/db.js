@@ -28,6 +28,10 @@ export async function connectDatabase(configOrUri) {
   if (error || data !== 1) throw Object.assign(new Error('Esquema Supabase indisponível ou desatualizado.'), { code: error?.code || 'DATABASE_UNAVAILABLE' });
   const { error: appointmentsError } = await client.from('appointment_requests').select('id,user_id,revision').limit(0);
   if (appointmentsError) throw Object.assign(new Error('Migração de solicitações de atendimento ausente ou sem permissão.'), { code: appointmentsError.code || 'DATABASE_UNAVAILABLE' });
+  if (config.staffUserIds?.length || config.staffNotificationEmail) {
+    const {error:staffError}=await client.from('appointment_requests').select('staff_history,staff_message,notification_state,notification_attempts').limit(0);
+    if(staffError)throw Object.assign(new Error('Migração da equipe ausente ou sem permissão.'),{code:staffError.code||'DATABASE_UNAVAILABLE'});
+  }
   supabaseClient = client;
   activeBackend = 'supabase';
   return client;

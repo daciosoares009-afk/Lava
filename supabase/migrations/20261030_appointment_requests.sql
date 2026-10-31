@@ -13,6 +13,7 @@ create table if not exists public.appointment_requests (
 create index if not exists appointment_requests_owner_idx on public.appointment_requests(user_id, created_at desc, id desc);
 alter table public.appointment_requests enable row level security;
 revoke all on public.appointment_requests from public, anon, authenticated;
+revoke all on public.appointment_requests from service_role;
 grant select, insert, update on public.appointment_requests to service_role;
 create or replace trigger appointment_requests_updated_at before update on public.appointment_requests
 for each row execute function public.set_updated_at();

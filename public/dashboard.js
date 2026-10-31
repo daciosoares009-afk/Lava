@@ -325,9 +325,11 @@ async function loadAppointments() {
       const heading = document.createElement('h2'); heading.textContent = item.service;
       const detail = document.createElement('p');
       const date = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(`${item.preferredDate}T00:00:00Z`));
-      detail.textContent = `${date} · ${item.status === 'pending' ? 'Pendente de confirmação' : 'Cancelada'}`;
+      const labels = { pending:'Pendente de confirmação',confirmed:'Confirmada pela equipe',cancelled:'Cancelada',completed:'Concluída' };
+      detail.textContent = `${date} · ${labels[item.status] || 'Situação indisponível'}`;
       const notes = document.createElement('p'); notes.textContent = item.notes;
       article.append(heading, detail, notes);
+      if (item.staffMessage) article.append(Object.assign(document.createElement('p'),{textContent:`Orientação da equipe: ${item.staffMessage}`}));
       if (item.status === 'pending') {
         const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'text-link'; edit.textContent = 'Editar';
         edit.addEventListener('click', () => {

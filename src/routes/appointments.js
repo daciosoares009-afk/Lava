@@ -3,20 +3,24 @@ import { requireAuth } from '../authSession.js';
 import { appointments } from '../appointments.js';
 import { validateAppointment } from '../appointmentValidation.js';
 import { persistentLimit } from '../securityStore.js';
+import { notifyStaff } from '../staffNotifications.js';
 
 const router = Router();
 router.use(requireAuth);
 router.get('/', async (req, res) => {
   const status = req.query.status || '';
   const page = Number(req.query.page || 1);
-  if (!['', 'pending', 'cancelled'].includes(status) || !Number.isInteger(page) || page < 1 || page > 10000) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Filtro ou página inválida.' } });
-  return res.json(await appointments.list(req.authenticatedUser.id, { status, page }));
+  if (!['', 'pending', 'confirmed', 'cancelled', 'completed'].includes(status) || !Number.isInteger(page) || page < 1 || page > 10000) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Filtro ou página inválida.' } });
+  return res.json(await appointments.list(req.authenticatedUser.id, { status, page, includeStaff: Boolean(req.app.locals.config.staffUserIds?.length) }));
 });
 router.use(persistentLimit('appointments-write', 60 * 60_000, 60));
 router.post('/', async (req, res) => {
   const { errors, value } = validateAppointment(req.body);
   if (Object.keys(errors).length) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Confira os dados da solicitação.', fields: errors } });
-  return res.status(201).json({ appointment: await appointments.create(req.authenticatedUser.id, value) });
+  const appointment = await appointments.create(req.authenticatedUser.id, value);
+  try { await notifyStaff(appointment.id,req.app.locals.config); }
+  catch { console.error('Staff notification processing failed; appointment preserved'); }
+  return res.status(201).json({ appointment });
 });
 router.patch('/:id', async (req, res) => {
   const revision = req.body?.revision;
