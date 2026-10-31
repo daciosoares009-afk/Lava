@@ -27,3 +27,10 @@ test('lê a configuração SMTP sem exigir e-mail para iniciar o aplicativo', ()
   assert.equal(config.smtp.port, 465);
   assert.equal(config.smtp.password, 'mail-secret');
 });
+
+test('MFA exige chave válida e obrigação de equipe não pode ficar sem chave',()=>{
+  const base={MONGODB_URI:'mongodb://localhost/lavemais',JWT_SECRET:'fixture-only-123456789012345678901234567890'};
+  assert.throws(()=>readConfig({...base,MFA_ENCRYPTION_KEY:'short'}),/MFA_ENCRYPTION_KEY/);
+  assert.throws(()=>readConfig({...base,REQUIRE_STAFF_MFA:'true'}),/MFA_ENCRYPTION_KEY/);
+  assert.equal(readConfig({...base,MFA_ENCRYPTION_KEY:'ab'.repeat(32),REQUIRE_STAFF_MFA:'true'}).requireStaffMfa,true);
+});

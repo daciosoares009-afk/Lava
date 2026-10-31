@@ -21,6 +21,21 @@ function publicRow(row) {
 async function result(query) { const { data, error } = await query; if (error) throw error; return data; }
 function record(value) { return { service: value.service, preferred_date: value.preferredDate, notes: value.notes }; }
 export const appointments = {
+  async overview(userId, today) {
+    if (mongo()) {
+      const filter = { userId, status: { $in: ['pending', 'confirmed'] }, preferredDate: { $gte: today } };
+      const [upcomingCount, next, recent] = await Promise.all([Appointment.countDocuments(filter), Appointment.findOne(filter).sort({ preferredDate: 1, _id: 1 }), Appointment.find({ userId }).sort({ createdAt: -1, _id: -1 }).limit(5)]);
+      return { upcomingCount, next: next ? publicRow(next) : null, recent: recent.map(publicRow) };
+    }
+    const client = getSupabaseClient();
+    const [count, next, recent] = await Promise.all([
+      client.from('appointment_requests').select('id', { count: 'exact', head: true }).eq('user_id', userId).in('status', ['pending', 'confirmed']).gte('preferred_date', today),
+      client.from('appointment_requests').select(columns).eq('user_id', userId).in('status', ['pending', 'confirmed']).gte('preferred_date', today).order('preferred_date').order('id').limit(1),
+      client.from('appointment_requests').select(columns).eq('user_id', userId).order('created_at', { ascending: false }).order('id', { ascending: false }).limit(5),
+    ]);
+    for (const result of [count, next, recent]) if (result.error) throw result.error;
+    return { upcomingCount: count.count, next: next.data[0] ? publicRow(next.data[0]) : null, recent: recent.data.map(publicRow) };
+  },
   async create(userId, value) {
     const row = mongo() ? await Appointment.create({ ...value, userId })
       : await result(getSupabaseClient().from('appointment_requests').insert({ ...record(value), user_id: userId }).select(columns).single());

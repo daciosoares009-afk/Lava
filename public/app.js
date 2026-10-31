@@ -6,6 +6,7 @@ const subtitle = document.querySelector('#form-subtitle');
 const kicker = document.querySelector('#form-kicker');
 const logoutButton = document.querySelector('.logout-button');
 let currentUser = null;
+let mfaChallenge = null;
 const accountDestinations = new Set(['/conta', '/conta/inicio', '/conta/agendamentos', '/conta/servicos', '/conta/planos', '/conta/beneficios', '/conta/perfil', '/conta/sobre']);
 
 function postLoginDestination() {
@@ -16,6 +17,8 @@ function postLoginDestination() {
 document.querySelector('#year').textContent = new Date().getFullYear();
 
 function setMode(mode) {
+  mfaChallenge = null;
+  document.querySelector('#mfa-login-form').hidden = true;
   const registering = mode === 'register';
   tabs.login.classList.toggle('is-active', !registering);
   tabs.register.classList.toggle('is-active', registering);
@@ -126,7 +129,7 @@ function validateForm(form, mode) {
       if (Number.isNaN(birth.getTime()) || birth >= today) message = 'Informe uma data de nascimento válida.';
     } else if (input.name === 'password') {
       if (new TextEncoder().encode(value).length > 72) message = 'A senha deve ter no máximo 72 bytes.';
-      else if (value.length < 8) message = 'A senha precisa ter pelo menos 8 caracteres.';
+      else if (mode === 'register' && value.length < 12) message = 'A senha precisa ter pelo menos 12 caracteres.';
       else if (mode === 'register' && (!/[A-Za-zÀ-ÿ]/.test(value) || !/\d/.test(value))) message = 'Inclua pelo menos uma letra e um número.';
     } else if (input.name === 'confirmPassword' && value !== form.elements.password.value) message = 'As senhas não coincidem.';
     if (message) {
@@ -167,8 +170,16 @@ forms.login.addEventListener('submit', (event) => {
     password: forms.login.elements.password.value,
   }).then((result) => {
     if (!result) return;
-    currentUser = result.user;
     forms.login.elements.password.value = '';
+    if (result.mfaRequired) {
+      mfaChallenge = result.challenge;
+      forms.login.hidden = true;
+      const mfaForm = document.querySelector('#mfa-login-form');
+      mfaForm.hidden = false;
+      mfaForm.elements.code.focus();
+      return;
+    }
+    currentUser = result.user;
     window.location.assign(postLoginDestination());
   });
 });
@@ -215,3 +226,11 @@ tabBar.addEventListener('keydown', (event) => {
   setMode(registering ? 'register' : 'login');
   (registering ? tabs.register : tabs.login).focus();
 });
+
+const mfaLoginForm = document.querySelector('#mfa-login-form');
+mfaLoginForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const result = await postAuth(mfaLoginForm, 'mfa/login', { challenge: mfaChallenge, code: mfaLoginForm.elements.code.value.trim() });
+  if (result?.user) { mfaChallenge = null; mfaLoginForm.reset(); window.location.assign(postLoginDestination()); }
+});
+document.querySelector('#mfa-back').addEventListener('click', () => { mfaLoginForm.reset(); setMode('login'); });

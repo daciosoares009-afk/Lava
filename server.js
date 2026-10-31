@@ -25,6 +25,7 @@ const isVercelDeployment = process.env.VERCEL === '1'
 
 app.disable('x-powered-by');
 app.use(helmet({
+  strictTransportSecurity: { maxAge: 31536000, includeSubDomains: false },
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
@@ -35,8 +36,9 @@ app.use(helmet({
   },
 }));
 app.use((req, res, next) => {
-  req.requestId = randomUUID();
-  res.set('X-Request-ID', req.requestId);
+  const requestId = randomUUID();
+  req.requestId = requestId;
+  res.set('X-Request-ID', requestId);
   if (req.path.startsWith('/api') || req.path.startsWith('/conta') || req.path === '/equipe' || req.path === '/login') res.set('Cache-Control', 'no-store');
   next();
 });
@@ -95,6 +97,8 @@ function initializeVercelDatabase(req, res, next) {
   });
 }
 
+app.get('/privacidade', (_req,res) => res.sendFile(path.join(__dirname,'privacidade.html')));
+app.get('/cookies', (_req,res) => res.sendFile(path.join(__dirname,'cookies.html')));
 app.use(initializeVercelDatabase);
 
 app.get('/api/health', async (_req, res) => {
@@ -115,11 +119,11 @@ app.get('/login', async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 app.get(['/recuperar-senha', '/recuperar-senha.html'], (_req, res) => res.sendFile(path.join(__dirname, 'recuperar-senha.html')));
-const accountSections = new Set(['inicio', 'agendamentos', 'servicos', 'planos', 'beneficios', 'perfil', 'sobre']);
+const accountSections = new Set(['inicio', 'agendamentos', 'servicos', 'planos', 'beneficios', 'historico', 'perfil', 'sobre']);
+const accountPaths = new Map(['/conta', ...Array.from(accountSections, section => `/conta/${section}`)].map(route => [route, route]));
 function safeAccountPath(value) {
-  if (value === '/conta') return value;
-  const match = typeof value === 'string' && value.match(/^\/conta\/([a-z-]+)$/);
-  return match && accountSections.has(match[1]) ? value : '/conta';
+  // Return only a server-owned route, never the supplied URL.
+  return typeof value === 'string' ? accountPaths.get(value) || '/conta' : '/conta';
 }
 
 app.get(['/conta', '/conta/:section'], async (req, res, next) => {
@@ -129,7 +133,7 @@ app.get(['/conta', '/conta/:section'], async (req, res, next) => {
     const session = await getSessionUser(req, res);
     if (session.user) return res.sendFile(path.join(__dirname, 'dashboard.html'));
     if (session.error === 'DATABASE_UNAVAILABLE') return res.status(503).send('Sua conta está temporariamente indisponível. Tente novamente em instantes.');
-    return res.redirect(302, `/login?next=${encodeURIComponent(req.path)}`);
+    return res.redirect(302, `/login?next=${encodeURIComponent(section === 'inicio' && req.path === '/conta' ? '/conta' : safeAccountPath(`/conta/${section}`))}`);
   } catch (error) { return next(error); }
 });
 app.get('/cadastro', (_req, res) => res.redirect(302, '/login#cadastro'));
@@ -144,9 +148,16 @@ app.use((error, req, res, next) => {
   else if (error?.type === 'entity.too.large') { status = 413; code = 'PAYLOAD_TOO_LARGE'; message = 'O conteúdo enviado excede o limite permitido.'; }
   else if (['ValidationError', 'CastError'].includes(error?.name) || ['23514', '22007', '22008', '22P02'].includes(error?.code)) { status = 400; code = 'VALIDATION_ERROR'; message = 'Confira os dados informados.'; }
   else if (error?.status >= 400 && error?.status < 500) { status = error.status; code = 'INVALID_REQUEST'; message = 'Solicitação inválida.'; }
-  else if (/Mongo.*(Network|Selection|Timeout)|MongooseServerSelectionError|AbortError|TimeoutError/.test(error?.name || '') || ['PGRST000', 'PGRST001', 'PGRST002', 'PGRST202', '42501', '42P01', 'ECONNREFUSED', 'ENOTFOUND', 'DATABASE_UNAVAILABLE'].includes(error?.code) || error?.message?.includes('fetch failed')) { status = 503; code = 'DATABASE_UNAVAILABLE'; message = 'O serviço está temporariamente indisponível.'; }
+  else if (isDatabaseAvailabilityError(error) || ['PGRST000', 'PGRST001', 'PGRST002', 'PGRST202', '42501', '42P01', 'ECONNREFUSED', 'ENOTFOUND', 'DATABASE_UNAVAILABLE'].includes(error?.code) || error?.message?.includes('fetch failed')) { status = 503; code = 'DATABASE_UNAVAILABLE'; message = 'O serviço está temporariamente indisponível.'; }
   return res.status(status).json({ error: { code, message } });
 });
+
+function isDatabaseAvailabilityError(error) {
+  const name = typeof error?.name === 'string' ? error.name.slice(0, 128) : '';
+  return name.includes('MongooseServerSelectionError')
+    || name.includes('AbortError') || name.includes('TimeoutError')
+    || (name.includes('Mongo') && ['Network', 'Selection', 'Timeout'].some(part => name.includes(part)));
+}
 
 async function start() {
   try {
@@ -169,5 +180,5 @@ async function start() {
 
 if (!isVercelDeployment && process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await start();
 
-export { app, start };
+export { app, start, safeAccountPath };
 export default app;

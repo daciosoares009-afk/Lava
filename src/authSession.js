@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import { mfaStore } from './mfaStore.js';
 import { users } from './users.js';
-import { createHash } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { sessionRevoked } from './securityStore.js';
 import { databaseReady } from './db.js';
 
@@ -30,7 +31,12 @@ export async function getSessionUser(req, res) {
       clearSessionCookies(res, config);
       return { error: 'UNAUTHENTICATED' };
     }
-    return { user };
+    const credential = await mfaStore.get(String(user.id));
+    if (credential?.enabled && claims.mfaVersion !== credential.version) {
+      clearSessionCookies(res, config);
+      return { error: 'UNAUTHENTICATED' };
+    }
+    return { user, mfaVersion: claims.mfaVersion };
   } catch (error) {
     if (error?.name === 'JsonWebTokenError' || error?.name === 'TokenExpiredError' || error?.name === 'NotBeforeError' || error?.name === 'CastError') {
       clearSessionCookies(res, req.app.locals.config);
@@ -46,8 +52,21 @@ export async function requireAuth(req, res, next) {
     if (result.error === 'DATABASE_UNAVAILABLE') return res.status(503).json({ error: { code: result.error, message: 'O serviço da conta está temporariamente indisponível.' } });
     if (result.error) return res.status(401).json({ error: { code: result.error, message: 'Entre para acessar sua conta.' } });
     req.authenticatedUser = result.user;
+    req.authenticatedMfaVersion = result.mfaVersion;
     return next();
   } catch (error) {
     return next(error);
   }
+}
+
+export function issueSession(res, user, secret, nodeEnv, mfaVersion) {
+  const token = jwt.sign({ sub: user.id, sv: user.sessionVersion || 0, ...(mfaVersion ? { mfaVersion } : {}) }, secret, { jwtid: randomUUID(), expiresIn: '7d', issuer: 'lavemais-api', audience: 'lavemais-client' });
+  clearSessionCookies(res, { nodeEnv });
+  res.cookie(cookieName, token, {
+    httpOnly: true,
+    secure: nodeEnv === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 }

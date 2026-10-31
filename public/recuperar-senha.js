@@ -54,7 +54,7 @@ function validateForm(form, confirmation = false) {
     else if (input.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)) message = 'Digite um e-mail válido.';
     else if (input.name === 'code' && !/^\d{6}$/.test(value)) message = 'Digite o código de 6 dígitos recebido por e-mail.';
     else if (input.name === 'password') {
-      if (value.length < 8) message = 'A senha precisa ter pelo menos 8 caracteres.';
+      if (value.length < 12) message = 'A senha precisa ter pelo menos 12 caracteres.';
       else if (!/[A-Za-zÀ-ÿ]/.test(value) || !/\d/.test(value)) message = 'Inclua pelo menos uma letra e um número.';
     } else if (input.name === 'confirmPassword' && value !== form.elements.password.value) {
       message = 'As senhas não coincidem.';

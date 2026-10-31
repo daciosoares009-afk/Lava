@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import nodemailer from 'nodemailer';
+import jwt from 'jsonwebtoken';
 import { databaseFixture, postgrestFetch } from '../test-support/postgres.js';
 import { connectDatabase, databaseReady, disconnectDatabase, checkDatabaseHealth } from './db.js';
 import { app } from '../server.js';
@@ -32,6 +33,18 @@ test('API Supabase: cadastro, perfil, reset SMTP, revogação, privacidade e lim
     return cookie;
   };
   const cookie = await login(registration.password);
+  const rawToken = cookie.slice(cookie.indexOf('=') + 1);
+  const parts = rawToken.split('.');
+  parts[2] = (parts[2][0] === 'a' ? 'b' : 'a') + parts[2].slice(1);
+  const claims = jwt.decode(rawToken);
+  const invalidTokens = [parts.join('.'),
+    jwt.sign({ sub: claims.sub }, config.jwtSecret, { algorithm: 'HS384', issuer: 'lavemais-api', audience: 'lavemais-client', expiresIn: '1h' }),
+    jwt.sign({ sub: claims.sub }, config.jwtSecret, { issuer: 'other', audience: 'lavemais-client', expiresIn: '1h' }),
+    jwt.sign({ sub: claims.sub }, config.jwtSecret, { issuer: 'lavemais-api', audience: 'other', expiresIn: '1h' }),
+    jwt.sign({ sub: claims.sub }, config.jwtSecret, { issuer: 'lavemais-api', audience: 'lavemais-client', expiresIn: -1 })];
+  for (const token of invalidTokens) {
+    assert.equal((await call('/api/auth/me', 'GET', undefined, 'lavemais_session=' + token)).status, 401);
+  }
   const profile = await call('/api/client/profile','GET',undefined,cookie);
   assert.equal(profile.status,200); assert.equal(profile.headers.get('cache-control'),'no-store');
   assert.equal('passwordHash' in (await profile.json()).user,false);
@@ -54,6 +67,14 @@ test('API Supabase: cadastro, perfil, reset SMTP, revogação, privacidade e lim
   const foreign = (await db.query("insert into public.appointment_requests(user_id,service,preferred_date) values ($1,'Privado',$2) returning id",[other.id,request.preferredDate])).rows[0];
   assert.equal((await call(`/api/client/appointments/${foreign.id}`,'PATCH',{...request,revision:0},cookie)).status,409);
   assert.equal((await call(`/api/client/appointments/${foreign.id}/cancel`,'POST',{revision:0},cookie)).status,409);
+  assert.equal((await call('/api/client/dashboard')).status,401);
+  const dashboardResponse = await call('/api/client/dashboard?userId='+other.id,'GET',undefined,cookie);
+  assert.equal(dashboardResponse.status,200);
+  const dashboard = await dashboardResponse.json();
+  assert.equal(dashboard.upcomingCount,1);
+  assert.equal(dashboard.next.id,appointment.id);
+  assert.deepEqual(dashboard.recent.map(item=>item.id),[appointment.id]);
+  assert.equal((await call('/conta/historico','GET',undefined,cookie)).status,200);
   const edited = await call(`/api/client/appointments/${appointment.id}`,'PATCH',{...request,notes:'Alterado',revision:0},cookie);
   assert.equal(edited.status,200);
   assert.equal((await edited.json()).appointment.revision,1);
@@ -61,6 +82,7 @@ test('API Supabase: cadastro, perfil, reset SMTP, revogação, privacidade e lim
   assert.equal((await call(`/api/client/appointments/${appointment.id}/cancel`,'POST',{revision:1},cookie)).status,200);
   assert.equal((await call(`/api/client/appointments/${appointment.id}`,'PATCH',{...request,revision:2},cookie)).status,409);
   const persisted = (await (await call('/api/client/appointments?status=cancelled','GET',undefined,cookie)).json()).appointments;
+  assert.equal((await (await call('/api/client/dashboard','GET',undefined,cookie)).json()).upcomingCount,0);
   assert.equal(persisted.length,1); assert.equal(persisted[0].notes,'Alterado');
   assert.equal((await call('/api/client/appointments?page=-1','GET',undefined,cookie)).status,400);
   await db.query("insert into public.appointment_requests(user_id,service,preferred_date) select $1,'Histórico '||n,$2 from generate_series(1,21) n",[other.id,request.preferredDate]);

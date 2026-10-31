@@ -132,7 +132,7 @@ function renderServices() {
 
 function renderLegalLinks() {
   const container = document.querySelector('[data-legal-links]');
-  [['termsUrl', 'Termos de uso'], ['privacyUrl', 'Política de privacidade']].forEach(([key, label]) => {
+  [['termsUrl', 'Termos de uso'], ['privacyUrl', 'Política de privacidade'], ['cookiesUrl', 'Política de cookies']].forEach(([key, label]) => {
     const url = siteContent.legal[key]?.trim();
     if (!url) return;
     const link = document.createElement('a');

@@ -1,0 +1,46 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { once } from 'node:events';
+import bcrypt from 'bcryptjs';
+import { databaseFixture,postgrestFetch } from '../test-support/postgres.js';
+import { connectDatabase,disconnectDatabase } from './db.js';
+import { app } from '../server.js';
+import { totp } from './mfaCrypto.js';
+import { mfaStore } from './mfaStore.js';
+
+test('MFA: ativação, isolamento, desafio sem sessão, replay, recovery e desativação',async t=>{
+  const {db}=await databaseFixture(), nativeFetch=globalThis.fetch, transport=postgrestFetch(db);
+  t.mock.method(globalThis,'fetch',(url,init)=>String(url).startsWith('https://mfa.invalid')?transport(url,init):nativeFetch(url,init));
+  const config={backend:'supabase',supabaseUrl:'https://mfa.invalid',supabaseServiceRoleKey:'fixture',jwtSecret:'fixture-jwt-key-1234567890123456789012',mfaEncryptionKey:'ab'.repeat(32),nodeEnv:'test'};
+  await connectDatabase(config);app.locals.config=config;
+  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
+  t.after(async()=>{await new Promise(resolve=>server.close(resolve));await disconnectDatabase();await db.close();});
+  const base=`http://127.0.0.1:${server.address().port}`;
+  const call=(route,body,cookie)=>nativeFetch(base+'/api/'+route,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},...(body?{body:JSON.stringify(body)}:{})});
+  const password='FixturePassword123',hash=await bcrypt.hash(password,12);
+  const id=(await db.query("insert into public.users(full_name,email,phone,birth_date,password_hash) values('Cliente Teste','mfa@example.test','11999999999','1990-01-01',$1) returning id",[hash])).rows[0].id;
+  const cookieOf=res=>res.headers.getSetCookie().find(c=>/^lavemais_session=.+; Path=\//.test(c))?.split(';')[0];
+  const login=await call('auth/login',{email:'mfa@example.test',password}),oldCookie=cookieOf(login);
+  config.staffUserIds=[id];config.requireStaffMfa=true;
+  assert.equal((await call('staff/appointments',undefined,oldCookie)).status,403);
+  const setup=await call('auth/mfa/setup',{password},oldCookie);assert.equal(setup.status,200);const {secret}=await setup.json();
+  assert.doesNotMatch((await db.query('select secret from public.mfa_credentials where user_id=$1',[id])).rows[0].secret,new RegExp(secret));
+  const code=totp(secret,Math.floor(Date.now()/30000));
+  const confirmation=await call('auth/mfa/confirm',{password,code},oldCookie);assert.equal(confirmation.status,200);
+  const codes=(await confirmation.json()).recoveryCodes,enabledCookie=cookieOf(confirmation);assert.equal(codes.length,8);
+  assert.equal((await call('auth/me',undefined,oldCookie)).status,401);
+  assert.equal((await call('staff/appointments',undefined,enabledCookie)).status,200);
+  const challengeResponse=await call('auth/login',{email:'mfa@example.test',password});assert.equal(cookieOf(challengeResponse),undefined);
+  const challenge=(await challengeResponse.json()).challenge;assert.ok(challenge);
+  assert.equal((await call('auth/me',undefined,'lavemais_session='+challenge)).status,401);
+  assert.equal((await call('auth/mfa/login',{challenge,code})).status,400,'activation code cannot be replayed');
+  assert.equal((await call('auth/mfa/login',{challenge,code:codes[0]})).status,200);
+  assert.equal((await call('auth/mfa/login',{challenge,code:codes[0]})).status,400,'recovery is single use');
+  assert.equal((await call('auth/mfa/disable',{password:'wrong',code:codes[1]},enabledCookie)).status,401);
+  const disabled=await call('auth/mfa/disable',{password,code:codes[1]},enabledCookie);assert.equal(disabled.status,200);
+  assert.equal((await call('auth/me',undefined,enabledCookie)).status,401,'disable revokes all prior sessions');
+  assert.equal((await call('auth/me',undefined,cookieOf(disabled))).status,200);
+  for(const role of ['anon','authenticated']){await db.exec('set role '+role);await assert.rejects(db.query('select * from public.mfa_credentials'),/permission denied/);await db.exec('reset role');}
+  await mfaStore.begin(id,'fixture-encrypted','version-2');await mfaStore.activate(id,'version-2',1,['recovery-fixture']);
+  const concurrent=await Promise.all([1,2].map(()=>mfaStore.consume(id,'version-2',2,null)));assert.equal(concurrent.filter(Boolean).length,1);
+});

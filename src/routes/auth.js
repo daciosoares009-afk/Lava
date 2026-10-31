@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { createHmac, randomInt, randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
+import { passwordMatches } from '../passwordAuth.js';
 import jwt from 'jsonwebtoken';
 import { persistentLimit, revokeSession } from '../securityStore.js';
 import { createHash } from 'node:crypto';
@@ -8,10 +9,13 @@ import nodemailer from 'nodemailer';
 import { users } from '../users.js';
 import { validateLogin, validatePasswordResetConfirmation, validatePasswordResetRequest, validateRegistration } from '../authValidation.js';
 import { databaseReady } from '../db.js';
-import { clearSessionCookies, cookieName, getSessionUser } from '../authSession.js';
+import { clearSessionCookies, cookieName, getSessionUser, issueSession } from '../authSession.js';
 import { passwordResetEmail } from '../emails/templates.js';
 
+import { mfaStore } from '../mfaStore.js';
+import mfaRouter from './mfa.js';
 const router = Router();
+router.use('/mfa', mfaRouter);
 const authLimit = persistentLimit('auth-ip', 15 * 60_000, 10);
 const passwordResetRequestLimit = persistentLimit('reset-request-ip', 60 * 60_000, 5);
 const passwordResetConfirmLimit = persistentLimit('reset-confirm-ip', 15 * 60_000, 10);
@@ -25,17 +29,6 @@ function publicUser(user) {
   return { id: user.id, fullName: user.fullName, email: user.email, createdAt: user.createdAt };
 }
 
-function issueSession(res, user, secret, nodeEnv) {
-  const token = jwt.sign({ sub: user.id, sv: user.sessionVersion || 0 }, secret, { jwtid: randomUUID(), expiresIn: '7d', issuer: 'lavemais-api', audience: 'lavemais-client' });
-  clearSessionCookies(res, { nodeEnv });
-  res.cookie(cookieName, token, {
-    httpOnly: true,
-    secure: nodeEnv === 'production',
-    sameSite: 'strict',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-}
 
 function passwordResetCodeHash(code, secret) {
   return createHmac('sha256', secret).update(code).digest('hex');
@@ -134,8 +127,13 @@ router.post('/login', ensureDatabase, authLimit, async (req, res, next) => {
   if (Object.keys(errors).length) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Informe e-mail e senha válidos.', fields: errors } });
   try {
     const user = await users.findForLogin(value.email);
-    const matches = user ? await bcrypt.compare(value.password, user.passwordHash) : false;
+    const matches = await passwordMatches(user, value.password);
     if (!matches) return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'E-mail ou senha incorretos.' } });
+    const credential = await mfaStore.get(String(user.id));
+    if (credential?.enabled) {
+      const challenge = jwt.sign({ sub: String(user.id), sv: user.sessionVersion || 0, version: credential.version }, req.app.locals.config.jwtSecret, { jwtid: randomUUID(), issuer: 'lavemais-api', audience: 'lavemais-mfa', expiresIn: '5m' });
+      return res.json({ mfaRequired: true, challenge });
+    }
     issueSession(res, user, req.app.locals.config.jwtSecret, req.app.locals.config.nodeEnv);
     return res.json({ user: publicUser(user) });
   } catch (error) {

@@ -32,6 +32,8 @@ export async function connectDatabase(configOrUri) {
     const {error:staffError}=await client.from('appointment_requests').select('staff_history,staff_message,notification_state,notification_attempts').limit(0);
     if(staffError)throw Object.assign(new Error('Migração da equipe ausente ou sem permissão.'),{code:staffError.code||'DATABASE_UNAVAILABLE'});
   }
+  const { error: mfaError } = await client.from('mfa_credentials').select('user_id').limit(0);
+  if (mfaError) throw Object.assign(new Error('Migração de MFA ausente ou sem permissão.'), { code: mfaError.code || 'DATABASE_UNAVAILABLE' });
   supabaseClient = client;
   activeBackend = 'supabase';
   return client;

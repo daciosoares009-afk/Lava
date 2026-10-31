@@ -51,7 +51,7 @@
             </label>
             <label class="field">
               <span>Senha</span>
-              <span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required minlength="8" /><button class="password-toggle" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></span>
+              <span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required /><button class="password-toggle" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></span>
               <small class="field-error" aria-live="polite"></small>
             </label>
             <button class="submit-button" type="submit"><span>Entrar na minha conta</span><span class="button-arrow" aria-hidden="true">→</span></button>
@@ -61,14 +61,22 @@
             <p class="switch-prompt">Ainda não tem uma conta? <button type="button" data-switch="register">Criar cadastro</button></p>
           </form>
 
+          <form id="mfa-login-form" class="auth-form" hidden>
+            <p>Digite o código do aplicativo autenticador ou um código de recuperação. Este acesso expira em cinco minutos.</p>
+            <label class="field"><span>Código de verificação</span><span class="input-wrap"><input name="code" autocomplete="one-time-code" maxlength="24" required /></span><small class="field-error" aria-live="polite"></small></label>
+            <button class="submit-button" type="submit"><span>Verificar e entrar</span></button>
+            <p class="form-feedback" role="status" aria-live="polite"></p>
+            <button id="mfa-back" type="button">Voltar ao login</button>
+          </form>
+
           <form id="register-form" class="auth-form" hidden novalidate>
             <div class="field-grid">
               <label class="field field-full"><span>Nome completo</span><span class="input-wrap"><span class="input-icon" aria-hidden="true">◉</span><input name="fullName" type="text" autocomplete="name" placeholder="Como podemos chamar você?" required minlength="3" /></span><small class="field-error" aria-live="polite"></small></label>
               <label class="field"><span>E-mail</span><span class="input-wrap"><span class="input-icon" aria-hidden="true">✉</span><input name="email" type="email" autocomplete="email" placeholder="voce@email.com" required /></span><small class="field-error" aria-live="polite"></small></label>
               <label class="field"><span>Telefone</span><span class="input-wrap"><span class="input-icon" aria-hidden="true">⌕</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(00) 00000-0000" required /></span><small class="field-error" aria-live="polite"></small></label>
               <label class="field"><span>Data de nascimento</span><span class="input-wrap"><span class="input-icon" aria-hidden="true">▦</span><input name="birthDate" type="date" autocomplete="bday" required /></span><small class="field-error" aria-live="polite"></small></label>
-              <label class="field"><span>Senha</span><span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="password" type="password" autocomplete="new-password" placeholder="Mínimo de 8 caracteres" required minlength="8" /><button class="password-toggle" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></span><small class="field-hint">Use pelo menos 8 caracteres, com letra e número.</small><small class="field-error" aria-live="polite"></small></label>
-              <label class="field"><span>Confirmar senha</span><span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="confirmPassword" type="password" autocomplete="new-password" placeholder="Repita sua senha" required minlength="8" /></span><small class="field-error" aria-live="polite"></small></label>
+              <label class="field"><span>Senha</span><span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="password" type="password" autocomplete="new-password" placeholder="Mínimo de 12 caracteres" required minlength="12" /><button class="password-toggle" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></span><small class="field-hint">Use pelo menos 12 caracteres, com letra e número.</small><small class="field-error" aria-live="polite"></small></label>
+              <label class="field"><span>Confirmar senha</span><span class="input-wrap"><span class="input-icon lock-icon" aria-hidden="true">▣</span><input name="confirmPassword" type="password" autocomplete="new-password" placeholder="Repita sua senha" required minlength="12" /></span><small class="field-error" aria-live="polite"></small></label>
             </div>
             <button class="submit-button" type="submit"><span>Criar minha conta</span><span class="button-arrow" aria-hidden="true">→</span></button>
             <p class="form-feedback" role="status" aria-live="polite"></p>
@@ -79,5 +87,6 @@
         <footer class="form-footer"><span>© <span id="year"></span> LaveMais Lavanderia</span><span>Feito para facilitar seu dia.</span></footer>
       </section>
     </main>
+  <footer><p><a href="/privacidade">Política de Privacidade</a> · <a href="/cookies">Política de Cookies</a></p></footer>
   </body>
 </html>

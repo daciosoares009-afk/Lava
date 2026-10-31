@@ -1,0 +1,25 @@
+# Alternativa SOMENTE para hospedagem própria. Na Vercel, use o proxy/TLS da plataforma.
+# Substituir DOMINIO e caminhos dos certificados antes de carregar no Nginx.
+server {
+    listen 80;
+    server_name DOMINIO;
+    return 308 https://DOMINIO$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name DOMINIO;
+    ssl_certificate /etc/letsencrypt/live/DOMINIO/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/DOMINIO/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 16k;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 30s;
+    }
+}

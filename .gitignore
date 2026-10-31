@@ -5,3 +5,8 @@ node_modules/
 npm-debug.log*
 .vercel
 .email-previews/
+
+# Artifacts containing personal data, even when encrypted; keep outside git.
+*.dump
+*.dump.enc
+*.partial

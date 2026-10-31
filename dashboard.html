@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/dashboard.css" />
     <script type="module" src="/dashboard.js" defer></script>
+      <script src="/mfa.js" defer></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-layout">
@@ -23,6 +24,7 @@
           <a href="/conta/servicos" data-nav="servicos"><span aria-hidden="true">◌</span> Serviços e preços</a>
           <a href="/conta/planos" data-nav="planos"><span aria-hidden="true">▤</span> Planos</a>
           <a href="/conta/beneficios" data-nav="beneficios"><span aria-hidden="true">✳</span> Fidelidade e benefícios</a>
+          <a href="/conta/historico" data-nav="historico"><span data-icon="history"></span> Histórico</a>
           <a href="/conta/perfil" data-nav="perfil"><span aria-hidden="true">◎</span> Meu perfil</a>
           <a href="/conta/sobre" data-nav="sobre"><span aria-hidden="true">⌖</span> Sobre a LaveMais</a>
         </nav>
@@ -38,12 +40,19 @@
 
         <div class="dashboard-content">
           <section class="dashboard-panel is-visible" id="inicio" data-panel="inicio" aria-labelledby="welcome-title">
-            <div class="welcome-row"><div><p class="section-eyebrow">BEM-VINDO(A) À SUA CONTA</p><h1 id="welcome-title">Olá, <span data-first-name>cliente</span>.</h1><p class="welcome-copy">Mais praticidade para cuidar da sua rotina.</p></div><span class="welcome-mark" aria-hidden="true">L<span>+</span></span></div>
-            <div class="primary-action"><div><p class="section-eyebrow">PRECISA DE UMA LAVAGEM?</p><h2>Vamos começar por aqui.</h2><p>Consulte a equipe para saber como solicitar seu atendimento.</p></div><a class="button-primary" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">Conversar pelo WhatsApp <span aria-hidden="true">↗</span></a><p class="pending-inline" data-whatsapp-pending>O canal de WhatsApp será exibido quando o contato comercial estiver configurado.</p></div>
-            <div class="overview-grid">
-              <article class="overview-block overview-services"><div class="overview-heading"><div><p class="section-eyebrow">CUIDADO COM SUAS ROUPAS</p><h2>Serviços e preços</h2></div><a href="/conta/servicos" data-open-panel="servicos" class="text-link">Consultar <span aria-hidden="true">→</span></a></div><div data-overview-services class="overview-list"><p class="empty-copy">As opções confirmadas aparecerão aqui.</p></div></article>
-              <article class="overview-block overview-membership"><p class="section-eyebrow">SUA CONTA</p><h2>Planos e benefícios</h2><p>Acompanhe por aqui quando as opções e os recursos estiverem disponíveis.</p><a href="/conta/planos" data-open-panel="planos" class="text-link">Conhecer planos <span aria-hidden="true">→</span></a></article>
-            </div>
+            <div class="welcome-row"><div><p class="section-eyebrow">BEM-VINDO(A) À SUA CONTA</p><h1 id="welcome-title">Olá, <span data-first-name>cliente</span>.</h1><p class="welcome-copy">Mais praticidade para cuidar da sua rotina.</p></div><button class="notification-button" type="button" aria-label="Consultar notificações" aria-expanded="false" aria-controls="notification-note"><span data-icon="bell"></span></button></div>
+
+            <p id="notification-note" hidden>As atualizações estão disponíveis em Agendamentos. Notificações automáticas ainda não estão integradas.</p><p id="dashboard-feedback" role="status" aria-live="polite"></p>
+            <div id="dashboard-summary" aria-busy="true"><div class="summary-grid">
+              <article class="summary-card"><span data-icon="calendar" class="card-icon"></span><h2>Agendamentos</h2><strong data-upcoming class="metric skeleton">—</strong><p data-upcoming-copy>Carregando próximos atendimentos…</p></article>
+              <article class="summary-card"><span data-icon="gift" class="card-icon"></span><h2>Fidelidade</h2><strong class="metric metric-label">Em breve</strong><p>Contagem de serviços ainda não integrada.</p><div class="progress-track" aria-hidden="true"></div></article>
+              <article class="summary-card"><span data-icon="wallet" class="card-icon"></span><h2>Resumo financeiro</h2><strong class="metric metric-label">Indisponível</strong><p>Pagamentos ainda não são registrados na plataforma.</p></article>
+            </div><article class="dashboard-card next-card"><div class="section-heading"><h2>Próximo agendamento</h2><a href="/conta/agendamentos" data-open-panel="agendamentos" class="text-link">Ver agenda</a></div><div id="next-appointment" class="skeleton">Carregando atendimento…</div></article></div>
+            <article class="dashboard-card loyalty-card"><span data-icon="gift" class="card-icon"></span><div><h2>Seu cuidado pode render benefícios</h2><p>O programa de fidelidade ainda não está integrado. Serviços elegíveis, meta e recompensas serão exibidos quando as regras forem disponibilizadas.</p><div class="progress-track" aria-hidden="true"></div><a href="/conta/beneficios" data-open-panel="beneficios" class="text-link">Fidelidade e benefícios</a></div></article>
+            <article class="dashboard-card"><div class="section-heading"><h2>Histórico de serviços</h2><a href="/conta/historico" data-open-panel="historico" class="text-link">Ver histórico completo</a></div><p>Últimas solicitações registradas na sua conta.</p><div id="dashboard-history" class="skeleton">Carregando histórico…</div></article>
+            <article class="dashboard-card"><div class="section-heading"><h2>Planos e benefícios</h2><a href="/conta/planos" data-open-panel="planos" class="text-link">Consultar planos</a></div><p>Consulte as condições publicadas pela LaveMais. Assinaturas individuais ainda não são acompanhadas pela plataforma.</p><div data-overview-plans></div></article>
+            <article class="support-card"><span data-icon="chat" class="card-icon"></span><div><h2>Precisa de ajuda?</h2><p data-support-hours>Horários do canal ainda não informados.</p><p data-whatsapp-pending>O contato comercial ainda não foi configurado.</p></div><a class="button-primary" data-whatsapp-link hidden target="_blank" rel="noopener noreferrer">Conversar no WhatsApp</a></article>
+            <div hidden data-overview-services></div>
             <p class="account-since">Cliente desde <span data-member-since>—</span></p>
           </section>
 
@@ -67,6 +76,7 @@
             <div class="appointment-toolbar"><button class="button-primary" id="appointment-prev" type="button" disabled>Anterior</button><span id="appointment-page">Página 1</span><button class="button-primary" id="appointment-next" type="button" disabled>Próxima</button></div>
           </section>
 
+          <section class="dashboard-panel" id="historico" data-panel="historico" aria-labelledby="history-title"><div class="page-heading"><h1 id="history-title">Histórico</h1><p>Consulte todas as solicitações e filtre pela situação em Agendamentos.</p></div><button type="button" class="button-primary" data-open-panel="agendamentos">Abrir histórico completo e filtros</button><div id="full-history"></div></section>
           <section class="dashboard-panel" id="servicos" data-panel="servicos" aria-labelledby="services-title">
             <div class="page-heading"><p class="section-eyebrow">OPÇÕES CONFIRMADAS</p><h1 id="services-title">Serviços e preços</h1><p>Consulte somente as informações comerciais cadastradas pela LaveMais.</p></div>
             <div class="service-directory" data-service-directory><div class="editorial-empty"><span aria-hidden="true">01</span><div><h2>Informações em atualização</h2><p>Os serviços e valores serão exibidos quando forem confirmados pela LaveMais.</p></div></div></div>
@@ -89,6 +99,17 @@
 
           <section class="dashboard-panel" id="perfil" data-panel="perfil" aria-labelledby="profile-title">
             <div class="page-heading"><p class="section-eyebrow">SEUS DADOS PESSOAIS</p><h1 id="profile-title">Meu perfil</h1><p>Consulte e atualize os dados permitidos da sua conta.</p></div>
+            <section class="overview-block" id="mfa-settings" hidden aria-labelledby="mfa-heading">
+              <h2 id="mfa-heading">Segurança da conta</h2>
+              <p id="mfa-state" role="status">Consultando segundo fator…</p>
+              <form id="mfa-settings-form" class="profile-form">
+                <label class="profile-field">Senha atual<input type="password" name="password" autocomplete="current-password" required maxlength="72" /></label>
+                <label class="profile-field">Código do autenticador ou recuperação<input name="code" autocomplete="one-time-code" maxlength="24" /></label>
+                <button type="submit" class="button-primary" id="mfa-action">Configurar segundo fator</button>
+              </form>
+              <div id="mfa-enrollment" hidden><p>Adicione a chave abaixo manualmente ao aplicativo autenticador como TOTP (6 dígitos, 30 segundos). Depois confirme com um código. A configuração expira em dez minutos.</p><code id="mfa-secret"></code></div>
+              <div id="mfa-recovery" hidden><p>Guarde estes códigos em local seguro fora desta conta. Cada código só pode ser usado uma vez; eles não serão exibidos novamente. Sem o autenticador e sem esses códigos, o acesso não poderá ser recuperado automaticamente.</p><pre id="mfa-recovery-codes"></pre><button type="button" id="mfa-hide-codes">Já guardei os códigos</button></div>
+            </section>
             <form class="profile-form" id="profile-form" novalidate>
               <div class="profile-field"><label for="profile-name">Nome completo</label><input id="profile-name" name="fullName" autocomplete="name" required /><small data-error="fullName"></small></div>
               <div class="profile-field"><label for="profile-email">E-mail</label><input id="profile-email" name="email" type="email" autocomplete="email" readonly /><small>E-mail de acesso. Para alterá-lo, entre em contato com a LaveMais.</small></div>
@@ -115,5 +136,6 @@
       <a href="/conta/perfil" data-nav="perfil"><span aria-hidden="true">◎</span><small>Perfil</small></a>
     </nav>
     <button class="nav-backdrop" type="button" aria-label="Fechar navegação" hidden></button>
+  <footer><p><a href="/privacidade">Política de Privacidade</a> · <a href="/cookies">Política de Cookies</a></p></footer>
   </body>
 </html>

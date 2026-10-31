@@ -7,7 +7,7 @@ const validRegistration = {
   email: '  MARIA@example.com ',
   phone: '(11) 99999-9999',
   birthDate: '1990-03-15',
-  password: 'lavemais123',
+  password: 'lavemais12345',
 };
 
 test('normaliza e-mail para minúsculas e remove espaços', () => {
@@ -56,4 +56,11 @@ test('valida código de seis dígitos e senha segura na redefinição', () => {
     code: '042819',
     password: 'insegura',
   }).errors.password);
+});
+
+test('rejeita emails excessivos antes da validação de formato', () => {
+  const email = 'a.'.repeat(8000) + '@example.test';
+  for (const validate of [validateLogin, validatePasswordResetRequest, validatePasswordResetConfirmation]) {
+    assert.ok(validate({ email, password: 'Example123', code: '123456' }).errors.email);
+  }
 });

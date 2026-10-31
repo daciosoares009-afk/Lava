@@ -14,7 +14,9 @@
     "check": "node scripts/check.js",
     "emails:build": "node scripts/preview-emails.js",
     "emails:preview": "node scripts/preview-emails.js --serve",
-    "migrate:users": "node scripts/migrate-users.js"
+    "migrate:users": "node scripts/migrate-users.js",
+    "backup:run": "node scripts/backup.js",
+    "backup:decrypt": "node scripts/decrypt-backup.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.52.0",

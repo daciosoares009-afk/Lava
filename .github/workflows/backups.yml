@@ -1,0 +1,47 @@
+name: Isolated database backup
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 6 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: isolated-database-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    # Explicit operator activation; no production reads until configured.
+    if: vars.BACKUPS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: isolated-backups
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Prepare trusted database CA
+        env:
+          BACKUP_CA_PEM: ${{ secrets.BACKUP_CA_PEM }}
+        run: |
+          test -n "$BACKUP_CA_PEM"
+          umask 077
+          printf '%s' "$BACKUP_CA_PEM" > "$RUNNER_TEMP/database-ca.pem"
+      - name: Encrypt and upload to isolated account
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+          BACKUP_KMS_KEY_ID: ${{ vars.BACKUP_KMS_KEY_ID }}
+          BACKUP_CA_FILE: ${{ runner.temp }}/database-ca.pem
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.BACKUP_AWS_REGION }}
+        run: node scripts/backup.js
+      - name: Remove temporary CA
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/database-ca.pem"

@@ -10,10 +10,11 @@ export async function databaseFixture() {
   await db.exec(migration);
   const staffMigration = await readFile(new URL('../supabase/migrations/20261030_staff_workflow.sql', import.meta.url), 'utf8');
   await db.exec(staffMigration);
+  await db.exec(await readFile(new URL('../supabase/migrations/20261031_mfa.sql', import.meta.url), 'utf8'));
   return { db, schema, migration };
 }
 export function postgrestFetch(db) {
-  const tables = new Set(['users', 'rate_limits', 'session_revocations', 'appointment_requests']);
+  const tables = new Set(['users', 'rate_limits', 'session_revocations', 'appointment_requests', 'mfa_credentials']);
   const safeName = name => { if (!/^[a-z_]+$/.test(name)) throw new Error('Unsafe fixture identifier'); return name; };
   return async (input, init = {}) => {
     const url = new URL(input);
@@ -33,14 +34,15 @@ export function postgrestFetch(db) {
         for (const [key, value] of url.searchParams) {
           if (['select', 'limit', 'offset', 'order', 'on_conflict'].includes(key)) continue;
           const [op, ...rest] = value.split('.');
-          if (!['eq', 'gt'].includes(op)) throw new Error('Unknown fixture operator');
-          values.push(rest.join('.')); conditions.push(`${safeName(key)} ${op === 'eq' ? '=' : '>'} $${values.length}`);
+          if (!['eq', 'gt', 'gte', 'in'].includes(op)) throw new Error('Unknown fixture operator');
+          if (op === 'in') { values.push(rest.join('.').slice(1,-1).split(',')); conditions.push(`${safeName(key)} = any($${values.length})`); }
+          else { values.push(rest.join('.')); conditions.push(`${safeName(key)} ${{eq:'=',gt:'>',gte:'>='}[op]} $${values.length}`); }
         }
         const where = conditions.length ? ` where ${conditions.join(' and ')}` : '';
         const cols = url.searchParams.get('select') || '*';
         if (cols !== '*') cols.split(',').forEach(safeName);
         let sql;
-        if (!init.method || init.method === 'GET') sql = `select ${cols} from public.${table}${where}`;
+        if (!init.method || ['GET','HEAD'].includes(init.method)) sql = `select ${cols} from public.${table}${where}`;
         else if (init.method === 'POST') {
           const names = Object.keys(body).map(safeName);
           values.push(...Object.values(body));
@@ -63,6 +65,7 @@ export function postgrestFetch(db) {
             sql += ` ${key} ${n}`;
           }
         }
+        if (init.method === 'HEAD') { const count = (await db.query(`select count(*) from public.${table}${where}`, values)).rows[0].count; return new Response(null, {headers:{'content-range':`*/${count}`}}); }
         data = (await db.query(sql, values)).rows;
         if (headers.get('accept')?.includes('application/vnd.pgrst.object+json')) data = data[0] || null;
       }

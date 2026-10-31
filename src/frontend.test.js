@@ -18,7 +18,7 @@ test('cadastro preserva espaços da senha e limita bytes; abas funcionam pelo te
   w.fetch=async(url,init)=>{if(init)sent.push(JSON.parse(init.body));return{ok:false,status:400,json:async()=>({error:{message:'fixture'}})};};
   await w.run();
   const form=w.document.querySelector('#register-form');
-  const values={fullName:'Cliente Teste',email:'cliente@example.test',phone:'11999999999',birthDate:'1990-01-01',password:' Senha123 ',confirmPassword:' Senha123 '};
+  const values={fullName:'Cliente Teste',email:'cliente@example.test',phone:'11999999999',birthDate:'1990-01-01',password:' Senha12345678 ',confirmPassword:' Senha12345678 '};
   for(const [key,value]of Object.entries(values))form.elements[key].value=value;
   form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();
   assert.equal(sent.length,1);assert.equal(sent[0].password,values.password);
@@ -102,4 +102,43 @@ test('painel de equipe exibe dados como texto, salva decisão e trata acesso neg
   assert.match(w.document.querySelector('#staff-feedback').textContent,/Decisão salva/);
   denied=true;w.document.querySelector('#staff-refresh').click();await settle();
   assert.match(w.document.querySelector('#staff-list').textContent,/Acesso restrito/);
+});
+
+test('resumo exibe dados reais, detalhes seguros, cancelamento e recuperação de falha',async t=>{
+  const dom=await screen('dashboard.html','/conta','dashboard.js');t.after(()=>dom.window.close());
+  const w=dom.window;let fail=false,cancelled=false;w.confirm=()=>true;
+  const item={id:'owner-record',service:'<img src=x>',preferredDate:'2099-11-01',notes:'Observação real',status:'pending',revision:4};
+  w.fetch=async(url,init={})=>{
+    if(url==='/api/client/profile')return{ok:true,status:200,json:async()=>({user:{fullName:'Maria Silva',createdAt:'2020-01-01'}})};
+    if(url.endsWith('/cancel')){assert.equal(JSON.parse(init.body).revision,4);cancelled=true;return{ok:true,status:200,json:async()=>({})};}
+    if(url==='/api/client/dashboard')return{ok:!fail,status:fail?503:200,json:async()=>({upcomingCount:cancelled?0:1,next:cancelled?null:item,recent:[{...item,status:cancelled?'cancelled':'pending'}]})};
+    return{ok:true,status:200,json:async()=>({appointments:[],hasMore:false})};
+  };
+  await w.run();await settle();
+  assert.equal(w.document.querySelector('[data-upcoming]').textContent,'1');
+  assert.equal(w.document.querySelector('#next-appointment img'),null);
+  const detail=w.document.querySelector('#next-appointment button');detail.click();
+  assert.equal(detail.getAttribute('aria-expanded'),'true');
+  assert.match(w.document.querySelector('#next-appointment').textContent,/Observação real/);
+  w.document.querySelectorAll('#next-appointment button')[1].click();await settle();await settle();
+  assert.equal(w.document.querySelector('[data-upcoming]').textContent,'0');
+  assert.match(w.document.querySelector('#next-appointment').textContent,/Solicitar atendimento/);
+  fail=true;w.document.querySelector('#appointment-refresh').click();await settle();
+  // A new successful write refreshes the overview as well.
+  const form=w.document.querySelector('#appointment-form');form.elements.service.value='Lavagem';form.elements.preferredDate.value='2099-11-01';
+  form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();await settle();
+  assert.match(w.document.querySelector('#dashboard-feedback').textContent,/Tentar novamente/);
+  fail=false;w.document.querySelector('#dashboard-feedback button').click();await settle();
+  assert.equal(w.document.querySelector('#dashboard-summary').getAttribute('aria-busy'),'false');
+  assert.equal(w.document.querySelector('#dashboard-feedback').textContent,'');
+});
+
+test('login apresenta segundo fator sem redirecionar ou guardar desafio no navegador',async t=>{
+  const dom=await screen('index.html','/login','app.js');t.after(()=>dom.window.close());const w=dom.window;
+  w.fetch=async(_url,init)=>({ok:Boolean(init),status:init?200:401,json:async()=>init?{mfaRequired:true,challenge:'fixture-challenge'}:{}});
+  await w.run();const login=w.document.querySelector('#login-form');login.elements.email.value='fixture@example.test';login.elements.password.value='Old12345';
+  login.dispatchEvent(new w.Event('submit',{cancelable:true}));await settle();
+  assert.equal(login.hidden,true);assert.equal(w.document.querySelector('#mfa-login-form').hidden,false);assert.equal(login.elements.password.value,'');
+  assert.equal(w.localStorage.length,0);assert.equal(w.sessionStorage.length,0);
+  w.document.querySelector('#mfa-back').click();assert.equal(login.hidden,false);assert.equal(w.document.querySelector('#mfa-login-form').hidden,true);
 });

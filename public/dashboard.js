@@ -2,7 +2,7 @@ import { siteContent } from './site-content.js';
 
 const panels = [...document.querySelectorAll('[data-panel]')];
 const navLinks = [...document.querySelectorAll('[data-nav]')];
-const feedback = document.querySelector('.profile-feedback');
+const feedback = document.querySelector('#profile-form .profile-feedback');
 const profileForm = document.querySelector('#profile-form');
 const sidebar = document.querySelector('.sidebar');
 const menuToggle = document.querySelector('.mobile-menu-toggle');
@@ -220,6 +220,7 @@ async function loadProfile() {
     document.querySelector('[data-member-since]').textContent = Number.isNaN(since.getTime()) ? '—' : new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(since);
   } catch {
     showProfileFeedback('Não foi possível carregar seus dados. Atualize a página para tentar novamente.', true);
+    document.querySelector('#dashboard-feedback').textContent = 'Não foi possível carregar seu perfil. Atualize a página para tentar novamente.';
   }
 }
 
@@ -349,6 +350,7 @@ async function loadAppointments() {
             if (editingAppointment?.id === item.id) resetAppointment();
             appointmentMessage('Solicitação cancelada.');
             await loadAppointments();
+            await loadDashboard();
           } catch (error) { appointmentMessage(error.message || 'Falha de conexão. Atualize o histórico antes de tentar novamente.', true); cancel.disabled = false; }
         });
         article.append(edit, cancel);
@@ -377,6 +379,7 @@ appointmentForm.addEventListener('submit', async event => {
     resetAppointment(); appointmentPage = 1;
     appointmentMessage('Solicitação salva. O atendimento ainda precisa ser confirmado com a unidade.');
     await loadAppointments();
+    await loadDashboard();
   } catch (error) { appointmentMessage(error.message || 'Falha de conexão. Consulte o histórico antes de reenviar.', true); }
   finally { button.disabled = false; appointmentReset.disabled = false; button.textContent = editingAppointment ? label : 'Enviar solicitação'; }
 });
@@ -386,3 +389,98 @@ document.querySelector('#appointment-refresh').addEventListener('click', () => l
 appointmentPrev.addEventListener('click', () => { appointmentPage--; loadAppointments(); });
 appointmentNext.addEventListener('click', () => { appointmentPage++; loadAppointments(); });
 loadAppointments();
+
+// Inline SVG icons share one stroke style and require no additional library.
+const iconPaths = {
+ calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h3"/>',
+ gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13M12 8H8a3 3 0 1 1 3-3zm0 0h4a3 3 0 1 0-3-3z"/>',
+ wallet: '<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 8h18M16 12h5v5h-5z"/>',
+ chat: '<path d="M21 11a9 9 0 0 1-9 9H4l-2 2V11a9 9 0 0 1 19 0zM7 10h10M7 14h6"/>',
+ bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
+ history: '<path d="M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v6l4 2"/>',
+ home: '<path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3z"/>',
+ user: '<circle cx="12" cy="7" r="4"/><path d="M4 21v-3a8 8 0 0 1 16 0v3"/>',
+ services: '<rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M7 6h2M13 6h4"/>',
+ plans: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/>',
+ pin: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+ menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
+};
+function applyIcon(node, name) {
+  node.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + iconPaths[name] + '</svg>';
+}
+document.querySelectorAll('[data-icon]').forEach(node => applyIcon(node, node.dataset.icon));
+const navIcons = { inicio:'home', agendamentos:'calendar', servicos:'services', planos:'plans', beneficios:'gift', historico:'history', perfil:'user', sobre:'pin' };
+navLinks.forEach(link => applyIcon(link.querySelector('span'), navIcons[link.dataset.nav]));
+applyIcon(menuToggle.querySelector('span'), 'menu');
+applyIcon(document.querySelector('.benefit-star'), 'gift');
+const notificationButton = document.querySelector('.notification-button');
+notificationButton.addEventListener('click', () => {
+  const note = document.querySelector('#notification-note');
+  note.hidden = !note.hidden;
+  notificationButton.setAttribute('aria-expanded', String(!note.hidden));
+});
+if (siteContent.contact.hours?.length) document.querySelector('[data-support-hours]').textContent = siteContent.contact.hours.join(' · ');
+const publishedPlans = (siteContent.prices || []).filter(item => /mensais|anuais|familiares/i.test(item.label) && item.value?.trim());
+for (const plan of publishedPlans) {
+  const row = document.createElement('p'); row.textContent = plan.label + ' · ' + plan.value;
+  document.querySelector('[data-overview-plans]').append(row);
+}
+const statusLabels = {pending:'Pendente de confirmação', confirmed:'Confirmado', completed:'Concluído', cancelled:'Cancelado'};
+function textNode(tag, value, className = '') { return Object.assign(document.createElement(tag), {textContent:value, className}); }
+function openAgenda() { showPanel('agendamentos'); }
+function appointmentCard(item, featured = false) {
+  const article = document.createElement('article'); article.className = 'history-row';
+  const info = document.createElement('div');
+  info.append(textNode('h3', item.service));
+  const date = new Intl.DateTimeFormat('pt-BR', {timeZone:'UTC', dateStyle:'long'}).format(new Date(item.preferredDate + 'T00:00:00Z'));
+  info.append(textNode('p', date + ' · Horário a combinar'));
+  if (featured) info.append(textNode('p', 'Data de preferência · Valor não registrado'));
+  article.append(info, textNode('span', statusLabels[item.status] || 'Situação indisponível', 'status-badge status-' + item.status));
+  const actions = document.createElement('div'); actions.className = 'record-actions';
+  const details = textNode('button', 'Ver detalhes', 'text-link'); details.type = 'button';
+  const expanded = document.createElement('div'); expanded.className='record-details'; expanded.hidden=true;
+  expanded.append(textNode('p', item.notes || 'Sem observações.'), textNode('p', 'Valor não registrado. Consulte a unidade para confirmar o atendimento.'));
+  details.setAttribute('aria-expanded','false');
+  details.addEventListener('click', () => { expanded.hidden=!expanded.hidden; details.setAttribute('aria-expanded',String(!expanded.hidden)); });
+  actions.append(details);
+  if (featured && item.status === 'pending') {
+    const cancel = textNode('button','Cancelar solicitação','text-link cancel-action'); cancel.type='button';
+    cancel.addEventListener('click', async () => {
+      if (!window.confirm('Cancelar esta solicitação? O registro será preservado no histórico.')) return;
+      cancel.disabled=true;
+      try { await appointmentApi('/'+item.id+'/cancel','POST',{revision:item.revision}); await Promise.all([loadDashboard(),loadAppointments()]); }
+      catch(error) { document.querySelector('#dashboard-feedback').textContent=error.message; cancel.disabled=false; }
+    }); actions.append(cancel);
+  }
+  article.append(actions,expanded); return article;
+}
+let dashboardGeneration=0;
+async function loadDashboard() {
+  const generation=++dashboardGeneration;
+  const summary=document.querySelector('#dashboard-summary');
+  const message=document.querySelector('#dashboard-feedback');
+  summary.setAttribute('aria-busy','true'); message.replaceChildren();
+  try {
+    const response=await fetch('/api/client/dashboard',{credentials:'same-origin'});
+    if(response.status===401) { window.location.replace('/login?next=%2Fconta'); return; }
+    if(!response.ok) throw new Error('unavailable');
+    const data=await response.json();
+    if(!Number.isSafeInteger(data.upcomingCount) || !Array.isArray(data.recent)) throw new Error('invalid');
+    if(generation!==dashboardGeneration) return;
+    const count=document.querySelector('[data-upcoming]'); count.textContent=String(data.upcomingCount); count.classList.remove('skeleton');
+    document.querySelector('[data-upcoming-copy]').textContent=data.upcomingCount ? 'Solicitações futuras, pendentes ou confirmadas.' : 'Nenhuma solicitação futura.';
+    const next=document.querySelector('#next-appointment'); next.classList.remove('skeleton'); next.replaceChildren();
+    if(data.next) next.append(appointmentCard(data.next,true));
+    else { next.append(textNode('h3','Sua próxima lavagem começa aqui'),textNode('p','Envie uma preferência de data e aguarde a confirmação da equipe.')); const button=textNode('button','Solicitar atendimento','button-primary');button.type='button';button.addEventListener('click',openAgenda);next.append(button); }
+    for(const selector of ['#dashboard-history','#full-history']) { const target=document.querySelector(selector); target.classList.remove('skeleton');target.replaceChildren(...data.recent.map(item=>appointmentCard(item)));if(!data.recent.length)target.append(textNode('p','Você ainda não possui solicitações registradas.')); }
+  } catch {
+    if(generation!==dashboardGeneration)return;
+    message.append(textNode('span','Não foi possível carregar o resumo. '));
+    const retry=textNode('button','Tentar novamente','text-link');retry.type='button';retry.addEventListener('click',loadDashboard);message.append(retry);
+    document.querySelector('[data-upcoming]').textContent='—';
+    document.querySelector('[data-upcoming-copy]').textContent='Resumo indisponível.';
+    for(const selector of ['#next-appointment','#dashboard-history','#full-history']) { const target=document.querySelector(selector);target.classList.remove('skeleton');target.textContent='Dados indisponíveis. Tente novamente.'; }
+    document.querySelector('[data-upcoming]').classList.remove('skeleton');
+  } finally { if(generation===dashboardGeneration)summary.setAttribute('aria-busy','false'); }
+}
+loadDashboard();

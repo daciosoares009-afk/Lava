@@ -24,6 +24,7 @@ export const siteContent = {
   ],
   legal: {
     termsUrl: '',
-    privacyUrl: '',
+    privacyUrl: '/privacidade',
+    cookiesUrl: '/cookies',
   },
 };

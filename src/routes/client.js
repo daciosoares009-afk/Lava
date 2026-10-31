@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { appointments } from '../appointments.js';
 import { users } from '../users.js';
 import { requireAuth } from '../authSession.js';
 import { validateProfileUpdate } from '../profileValidation.js';
@@ -18,6 +19,10 @@ function profileUser(user) {
 
 router.use(requireAuth);
 
+router.get('/dashboard', async (req, res) => {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  res.json(await appointments.overview(req.authenticatedUser.id, today));
+});
 router.get('/profile', (req, res) => res.json({ user: profileUser(req.authenticatedUser) }));
 
 router.patch('/profile', async (req, res, next) => {

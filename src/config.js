@@ -52,5 +52,10 @@ export function readConfig(env = process.env) {
   }
   if (staffUserIds.length && backend !== 'supabase') invalid('O painel da equipe exige Supabase nesta versão.');
   if (staffNotificationEmail && (!smtp.configured || !appBaseUrl || backend !== 'supabase')) invalid('Avisos da equipe exigem Supabase, SMTP e APP_BASE_URL.');
-  return { port, backend, jwtSecret, mongoUri, supabaseUrl, supabaseServiceRoleKey, nodeEnv, smtp, trustProxy, vercelDeployment: deployed, staffUserIds, staffNotificationEmail, appBaseUrl };
+  const mfaEncryptionKey = env.MFA_ENCRYPTION_KEY || '';
+  if (mfaEncryptionKey && !/^[a-f0-9]{64}$/i.test(mfaEncryptionKey)) invalid('MFA_ENCRYPTION_KEY deve ter 64 caracteres hexadecimais aleatórios.');
+  const requireStaffMfa = env.REQUIRE_STAFF_MFA === 'true';
+  if (env.REQUIRE_STAFF_MFA && !['true','false'].includes(env.REQUIRE_STAFF_MFA)) invalid('REQUIRE_STAFF_MFA deve ser true ou false.');
+  if (requireStaffMfa && !mfaEncryptionKey) invalid('MFA_ENCRYPTION_KEY é obrigatória quando REQUIRE_STAFF_MFA=true.');
+  return { requireStaffMfa, mfaEncryptionKey, port, backend, jwtSecret, mongoUri, supabaseUrl, supabaseServiceRoleKey, nodeEnv, smtp, trustProxy, vercelDeployment: deployed, staffUserIds, staffNotificationEmail, appBaseUrl };
 }
