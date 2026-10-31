@@ -28,3 +28,6 @@ html,body{width:100%;min-height:100%}.dashboard-body,.dashboard-layout,.dashboar
   object-fit: cover;
   object-position: center 50%;
 }
+
+.dashboard-brand { padding: 4px; }
+.dashboard-brand img { object-fit: contain; object-position: center; }

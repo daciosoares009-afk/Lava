@@ -59,3 +59,23 @@ html,body{width:100%;min-height:100%}.auth-shell,.form-panel{width:100%;min-heig
 @media (prefers-reduced-motion: reduce) {
   .forgot-password-link, .auth-legal-links a { transition: none; }
 }
+
+/* Use the tightly framed official artwork without clipping its edges. */
+.brand-logo {
+  height: auto;
+  aspect-ratio: 2.7;
+  flex-shrink: 0;
+  padding: 10px;
+}
+.mobile-logo {
+  height: auto;
+  aspect-ratio: 2.7;
+  padding: 6px;
+}
+.brand-logo img, .mobile-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
